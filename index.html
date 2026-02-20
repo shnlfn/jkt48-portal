@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JKT48 Portal</title>
+    
+    <link rel="icon" type="image/png" href="favicon.png">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        /* --- CSS DASAR --- */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #fce4ec; color: #333; margin: 0; padding: 0; }
+        
+        /* --- NAVIGASI BAR --- */
+        .navbar { background-color: #d81b60; padding: 15px 20px; display: flex; justify-content: center; gap: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        .navbar button { background-color: transparent; color: white; border: 2px solid white; padding: 10px 20px; border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s; }
+        .navbar button:hover, .navbar button.active { background-color: white; color: #d81b60; }
+
+        /* --- KONTEN UTAMA --- */
+        .container { max-width: 1350px; margin: 30px auto; padding: 0 20px; }
+        .view-section { display: none; animation: fadeIn 0.4s ease-in; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        h2 { text-align: center; color: #d81b60; margin-bottom: 25px; }
+
+        /* --- FILTER BOX --- */
+        .filter-box { text-align: center; margin-bottom: 25px; }
+        .filter-box select { padding: 8px 12px; border-radius: 5px; border: 1px solid #d81b60; font-size: 1em; margin: 0 5px; outline: none; background: white; color: #d81b60; font-weight: bold; }
+        .filter-box button { background-color: #d81b60; color: white; border: none; padding: 9px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .filter-box button:hover { background-color: #ad144d; }
+
+        /* --- GRID & CARD --- */
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+        .card { background: white; border-radius: 12px; padding: 15px; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: start; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
+        .card img { width: 100%; max-width: 120px; aspect-ratio: 1/1; border-radius: 50%; object-fit: cover; border: 3px solid #f8bbd0; margin-bottom: 10px; }
+        .card h3 { margin: 0 0 5px 0; font-size: 1.05em; color: #d81b60; }
+        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 15px; font-size: 0.75em; font-weight: bold; color: white; background-color: #ec407a; margin-top: auto; }
+        .status-trainee { background-color: #7e57c2; }
+
+        /* --- LIST JADWAL --- */
+        .schedule-list { display: flex; flex-direction: column; gap: 15px; max-width: 800px; margin: 0 auto;}
+        .schedule-item { background: white; padding: 20px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-left: 5px solid #d81b60; transition: transform 0.2s; }
+        .schedule-item:hover { transform: translateX(5px); }
+        .schedule-date { font-weight: bold; color: #666; font-size: 0.9em; }
+        .schedule-title { font-size: 1.2em; color: #d81b60; margin: 5px 0 0 0; font-weight: bold;}
+
+        /* --- TOMBOL KEMBALI & DETAIL --- */
+        .btn-back { background-color: #666; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-bottom: 20px; }
+        .btn-back:hover { background-color: #444; }
+        .detail-box { background: white; padding: 30px; border-radius: 15px; max-width: 600px; margin: 0 auto; text-align: left; }
+        .detail-box img { width: 200px; height: 200px; border-radius: 15px; object-fit: cover; display: block; margin: 0 auto 20px auto; }
+        .detail-box p { margin: 10px 0; font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 5px;}
+
+        @media (max-width: 1024px) { #list-performing-members { grid-template-columns: repeat(4, 1fr) !important; } }
+        @media (max-width: 768px) { #list-performing-members { grid-template-columns: repeat(3, 1fr) !important; } .card img { max-width: 100px; } .card h3 { font-size: 0.9em; } }
+        @media (max-width: 480px) { #list-performing-members { grid-template-columns: repeat(2, 1fr) !important; } }
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <button id="btn-schedule" class="active" onclick="bukaHalaman('view-schedule')">Schedules</button>
+        <button id="btn-member" onclick="bukaHalaman('view-member')">Members</button>
+    </div>
+
+    <div class="container">
+        <div id="view-schedule" class="view-section active">
+            <h2>Jadwal Teater</h2>
+            <div class="filter-box">
+                <select id="filter-bulan">
+                    <option value="1">Januari</option> <option value="2">Februari</option> <option value="3">Maret</option>
+                    <option value="4">April</option> <option value="5">Mei</option> <option value="6">Juni</option>
+                    <option value="7">Juli</option> <option value="8">Agustus</option> <option value="9">September</option>
+                    <option value="10">Oktober</option> <option value="11">November</option> <option value="12">Desember</option>
+                </select>
+                <select id="filter-tahun">
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                </select>
+                <button onclick="terapkanFilterJadwal()">Cari Jadwal</button>
+            </div>
+            <div id="loading-schedule" style="text-align: center;">Memuat jadwal...</div>
+            <div class="schedule-list" id="list-jadwal"></div>
+        </div>
+
+        <div id="view-schedule-detail" class="view-section">
+            <button class="btn-back" onclick="bukaHalaman('view-schedule')">&#11013; Kembali ke Jadwal</button>
+            <h2 id="detail-judul-jadwal">Judul Jadwal</h2>
+            <p style="text-align: center; color: #666; margin-top: -15px; margin-bottom: 30px;" id="detail-waktu-jadwal">Waktu</p>
+            <div id="loading-performing" style="text-align: center; display: none;">Memuat member...</div>
+            <div class="grid-container" id="list-performing-members"></div>
+        </div>
+
+        <div id="view-member" class="view-section">
+            <h2>Ensiklopedia Member JKT48</h2>
+            <div id="loading-member" style="text-align: center;">Memuat member...</div>
+            <div class="grid-container" id="list-member"></div>
+        </div>
+
+        <div id="view-member-detail" class="view-section">
+            <button class="btn-back" onclick="bukaHalaman('view-member')">&#11013; Kembali ke Daftar Member</button>
+            <div class="detail-box" id="info-detail-member"></div>
+        </div>
+    </div>
+
+    <script>
+        // GANTI DENGAN URL DAN KEY ANON KAMU
+        const SUPABASE_URL = 'https://rwxqcpyckvygxkbmxbun.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'sb_publishable_49vkEEomI33CyOPTDpGb4w_Tpmx_ADJ'; 
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        function bukaHalaman(idHalaman) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(idHalaman).classList.add('active');
+
+            document.getElementById('btn-schedule').classList.remove('active');
+            document.getElementById('btn-member').classList.remove('active');
+            
+            if(idHalaman === 'view-schedule' || idHalaman === 'view-schedule-detail') {
+                document.getElementById('btn-schedule').classList.add('active');
+            } else {
+                document.getElementById('btn-member').classList.add('active');
+            }
+        }
+
+        function terapkanFilterJadwal() {
+            const thn = document.getElementById('filter-tahun').value;
+            const bln = document.getElementById('filter-bulan').value;
+            muatJadwalBerdasarkanBulan(thn, bln);
+        }
+
+        async function muatJadwalBerdasarkanBulan(tahun, bulan) {
+            const container = document.getElementById('list-jadwal');
+            const loading = document.getElementById('loading-schedule');
+            
+            container.innerHTML = '';
+            loading.style.display = 'block';
+            
+            const awalBulan = new Date(tahun, bulan - 1, 1).toISOString();
+            const akhirBulan = new Date(tahun, bulan, 0, 23, 59, 59).toISOString();
+
+            const { data, error } = await supabaseClient
+                .from('theater_schedules')
+                .select('*')
+                .gte('tanggal_waktu', awalBulan)
+                .lte('tanggal_waktu', akhirBulan)
+                .order('tanggal_waktu', { ascending: true });
+
+            loading.style.display = 'none';
+
+            if (error) return container.innerHTML = `<p style="color:red;">Gagal memuat jadwal: ${error.message}</p>`;
+            if (data.length === 0) return container.innerHTML = `<p style="text-align:center;">Belum ada jadwal untuk ${document.getElementById('filter-bulan').options[bulan-1].text} ${tahun}.</p>`;
+
+            data.forEach(jadwal => {
+                const tgl = new Date(jadwal.tanggal_waktu);
+                const formatWaktu = tgl.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute:'2-digit' }) + ' WIB';
+
+                const div = document.createElement('div');
+                div.className = 'schedule-item';
+                div.onclick = () => muatDetailJadwal(jadwal.id, jadwal.judul_show, formatWaktu);
+                div.innerHTML = `
+                    <div>
+                        <div class="schedule-date">${formatWaktu}</div>
+                        <h3 class="schedule-title">${jadwal.judul_show}</h3>
+                    </div>
+                    <div style="color: #d81b60; font-size: 24px;">&#10140;</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        async function muatDetailJadwal(scheduleId, judul, waktu) {
+            bukaHalaman('view-schedule-detail');
+            document.getElementById('detail-judul-jadwal').innerText = judul;
+            document.getElementById('detail-waktu-jadwal').innerText = waktu;
+            
+            const container = document.getElementById('list-performing-members');
+            const loading = document.getElementById('loading-performing');
+            
+            container.style.gridTemplateColumns = '';
+            container.style.justifyContent = '';
+            container.innerHTML = '';
+            loading.style.display = 'block';
+
+            // [PERBAIKAN]: Menambahkan 'generasi' di perintah select agar ditarik dari database
+            const { data, error } = await supabaseClient
+                .from('performing_members')
+                .select(`is_birthday, members ( id, nama, nama_panggilan, foto_url, status, generasi )`)
+                .eq('schedule_id', scheduleId);
+
+            loading.style.display = 'none';
+            if (error) return container.innerHTML = `<p style="color:red;">Gagal memuat: ${error.message}</p>`;
+
+            const totalMembers = data.length;
+            if (window.innerWidth > 1024) {
+                container.style.justifyContent = 'center';
+                if (totalMembers === 16) {
+                    container.style.gridTemplateColumns = 'repeat(8, 140px)';
+                } else if (totalMembers === 12) {
+                    container.style.gridTemplateColumns = 'repeat(6, 140px)';
+                } else {
+                    container.style.gridTemplateColumns = 'repeat(auto-fit, 140px)';
+                }
+            }
+
+            data.forEach(item => {
+                const member = item.members;
+                const warnaStatus = member.status === 'Trainee' ? 'status-trainee' : '';
+                const namaTampil = item.is_birthday ? `&#127874; ${member.nama_panggilan || member.nama}` : (member.nama_panggilan || member.nama);
+
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.onclick = () => muatDetailMemberById(member.id);
+                card.innerHTML = `
+                    <img src="${member.foto_url}" alt="${member.nama}">
+                    <h3>${namaTampil}</h3>
+                    <span class="status-badge ${warnaStatus}">${member.status}</span>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        let dataSemuaMember = []; 
+
+        async function muatDaftarMember() {
+            const container = document.getElementById('list-member');
+            const loading = document.getElementById('loading-member');
+
+            if(dataSemuaMember.length > 0) {
+                loading.style.display = 'none';
+                return;
+            }
+
+            const { data, error } = await supabaseClient
+                .from('members')
+                .select('*')
+                .order('nama', { ascending: true });
+
+            loading.style.display = 'none';
+            if (error) return container.innerHTML = `<p style="color:red;">Gagal memuat: ${error.message}</p>`;
+
+            dataSemuaMember = data; 
+            container.innerHTML = '';
+
+            data.forEach(member => {
+                const warnaStatus = member.status === 'Trainee' ? 'status-trainee' : '';
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.onclick = () => tampilkanDetailMemberDariData(member);
+                card.innerHTML = `
+                    <img src="${member.foto_url}" alt="${member.nama}">
+                    <h3>${member.nama_panggilan || member.nama}</h3>
+                    <span class="status-badge ${warnaStatus}">${member.status}</span>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function tampilkanDetailMemberDariData(member) {
+            bukaHalaman('view-member-detail');
+            const container = document.getElementById('info-detail-member');
+            const warnaStatus = member.status === 'Trainee' ? 'status-trainee' : '';
+
+            // [PERBAIKAN]: Menambahkan baris untuk menampilkan Generasi
+            container.innerHTML = `
+                <img src="${member.foto_url}" alt="${member.nama}">
+                <h2 style="margin-top:0;">${member.nama_lengkap || member.nama}</h2>
+                <div style="text-align:center; margin-bottom:20px;">
+                    <span class="status-badge ${warnaStatus}">${member.status}</span>
+                </div>
+                <p><strong>Generasi:</strong> ${member.generasi || '<span style="color:#aaa; font-style:italic;">Belum diatur</span>'}</p>
+                <p><strong>Nama Panggilan:</strong> ${member.nama_panggilan || '-'}</p>
+                <p><strong>Tanggal Lahir:</strong> ${member.tanggal_lahir || '-'}</p>
+                <p><strong>Golongan Darah:</strong> ${member.golongan_darah || '-'}</p>
+                <p><strong>Horoskop:</strong> ${member.horoskop || '-'}</p>
+                <p><strong>Tinggi Badan:</strong> ${member.tinggi_badan || '-'}</p>
+            `;
+        }
+
+        async function muatDetailMemberById(memberId) {
+            bukaHalaman('view-member-detail');
+            const container = document.getElementById('info-detail-member');
+            container.innerHTML = `<p style="text-align:center;">Memuat profil...</p>`;
+
+            const { data, error } = await supabaseClient
+                .from('members').select('*').eq('id', memberId).single();
+
+            if (!error && data) tampilkanDetailMemberDariData(data);
+        }
+
+        // --- INISIALISASI ---
+        const sekarang = new Date();
+        document.getElementById('filter-tahun').value = sekarang.getFullYear();
+        document.getElementById('filter-bulan').value = sekarang.getMonth() + 1;
+        
+        terapkanFilterJadwal();
+        muatDaftarMember(); 
+    </script>
+</body>
+</html>
