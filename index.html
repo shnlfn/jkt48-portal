@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>JKT48 Portal</title>
     
-    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="icon" type="image/png" href="favicon.png" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
@@ -38,15 +38,15 @@
         .card-album img { border-radius: 10px; max-width: 150px; aspect-ratio: 1/1; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 10px; object-fit: cover;}
         .card-album h3 { margin: 0 0 5px 0; font-size: 1.05em; color: #d81b60; }
 
-        /* --- BADGE STATUS MEMBER --- */
+        /* --- BADGE STATUS MEMBER (Dipakai di Detail Profil) --- */
         .status-badge { display: inline-block; padding: 4px 10px; border-radius: 15px; font-size: 0.75em; font-weight: bold; color: white; background-color: #ec407a; margin-top: auto; text-align: center; line-height: 1.2;}
         .status-anggota { background-color: #ec407a; } 
         .status-trainee { background-color: #7e57c2; } 
-        .status-suspended { background-color: #000000; } 
-        .status-hiatus { background-color: #ff9800; } 
-        .status-announced { background-color: #696969; } 
         .status-graduated { background-color: #B2BEB5; color: #222; border: 1px solid #999;} 
         .status-captain { background-color: #d4af37; color: #000; box-shadow: 0 0 5px rgba(212, 175, 55, 0.5); } 
+        .status-announced { background-color: #ad8a9e; } 
+        .status-hiatus { background-color: #ff9800; } 
+        .status-suspended { background-color: #333333; } 
         
         .status-setlist { background-color: #ff9800; }
         .status-single { background-color: #03a9f4; }
@@ -98,7 +98,7 @@
         .album-member-small img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #d81b60; margin-bottom: 5px; transition: 0.3s; background-color: #fff;}
         .album-member-small p { font-size: 0.75em; margin: 0; line-height: 1.2; color: #d81b60; font-weight: bold; }
         
-        /* --- CSS DYNAMIC EVENTS --- */
+        /* --- CSS DYNAMIC EVENTS (Center, STS, Dll) --- */
         .icon-single { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 1.5em; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); z-index: 2; }
         .badge-single { position: absolute; top: 54px; left: 50%; transform: translateX(-50%); color: white; font-size: 0.55em; padding: 2px 8px; border-radius: 10px; font-weight: bold; border: 1px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 3; letter-spacing: 0.5px; white-space: nowrap; }
         .icon-dual-left { position: absolute; top: -15px; left: 15%; transform: translateX(-50%); font-size: 1.5em; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); z-index: 2; }
@@ -226,7 +226,7 @@
     </div>
 
     <div class="footer">
-        Made with &hearts; by <b>LFN</b>
+        Made with &hearts; by <b>LFN / @FianHyde</b>
     </div>
 
     <script>
@@ -251,16 +251,19 @@
             window.scrollTo(0, 0); 
         }
 
-        function getWarnaStatusMember(status) {
-            if (!status) return 'status-anggota'; 
+        // --- FUNGSI FORMAT STATUS (Untuk Profil Detail) ---
+        function getFormatStatusMember(status) {
+            if (!status) return { kelas: 'status-anggota', teks: 'Anggota' }; 
             const s = status.toLowerCase();
-            if (s.includes('trainee')) return 'status-trainee';
-            if (s.includes('graduated') || s.includes('graduation') && !s.includes('announced')) return 'status-graduated';
-            if (s.includes('announced')) return 'status-announced';
-            if (s.includes('hiatus')) return 'status-hiatus';
-            if (s.includes('captain')) return 'status-captain';
-            if (s.includes('suspended')) return 'status-suspended';
-            return 'status-anggota'; 
+            
+            if (s.includes('trainee')) return { kelas: 'status-trainee', teks: 'Trainee' };
+            if (s.includes('captain')) return { kelas: 'status-captain', teks: '&#127894;&#65039; Captain' };
+            if (s.includes('suspended')) return { kelas: 'status-suspended', teks: '&#128683; Suspended' };
+            if (s.includes('hiatus')) return { kelas: 'status-hiatus', teks: '&#9208;&#65039; Hiatus' };
+            if (s.includes('announced')) return { kelas: 'status-announced', teks: '&#128226; Announced Grad' };
+            if (s.includes('graduated') || s.includes('graduation')) return { kelas: 'status-graduated', teks: 'Graduated' };
+            
+            return { kelas: 'status-anggota', teks: status }; 
         }
 
         function dapatkanURLFotoCustom(namaMember, judulShowOrAlbum, fotoAsli) {
@@ -334,21 +337,21 @@
 
                 const tipeJadwal = jadwal.tipe_jadwal || 'Theater';
                 let classBadgeTipe = 'tipe-theater';
-                let warnaTeksJudul = '#d81b60'; // Default Pink Theater
+                let warnaTeksJudul = '#d81b60'; 
 
                 if (tipeJadwal !== 'Theater') {
                     classBadgeTipe = 'tipe-event';
-                    warnaTeksJudul = '#004080'; // Biru Navy
+                    warnaTeksJudul = '#004080'; 
                     if (tipeJadwal.toLowerCase().includes('ramadhan') || tipeJadwal.toLowerCase().includes('ramadan')) {
                         classBadgeTipe = 'tipe-ramadan';
-                        warnaTeksJudul = '#28a745'; // Hijau
+                        warnaTeksJudul = '#28a745'; 
                     }
                 }
 
                 const div = document.createElement('div');
                 div.className = 'list-item';
                 div.style.borderLeftColor = warnaTeksJudul; 
-                div.onclick = () => muatDetailJadwal(jadwal.id, jadwal.judul_show, formatWaktu, jadwal.lokasi, tipeJadwal, jadwal.foto_event); // Kirim foto_event ke fungsi
+                div.onclick = () => muatDetailJadwal(jadwal.id, jadwal.judul_show, formatWaktu, jadwal.lokasi, tipeJadwal, jadwal.foto_event);
                 div.innerHTML = `
                     <div>
                         <div class="list-subtitle">
@@ -367,11 +370,11 @@
             bukaHalaman('view-schedule-detail');
             
             let warnaTema = '#d81b60'; 
-            let tipeJudulFoto = 'Foto Teater'; // Default Judul Foto
+            let tipeJudulFoto = 'Foto Teater';
 
             if (tipeJadwal !== 'Theater') {
                 warnaTema = '#004080'; 
-                tipeJudulFoto = 'Foto Event'; // Ubah Judul Foto jika Event
+                tipeJudulFoto = 'Foto Event';
                 if (tipeJadwal.toLowerCase().includes('ramadhan') || tipeJadwal.toLowerCase().includes('ramadan')) {
                     warnaTema = '#28a745'; 
                 }
@@ -393,11 +396,9 @@
             elTeksMember.style.color = warnaTema;
             elTeksSetlist.style.color = warnaTema;
             
-            // Atur Judul Foto Sesuai Tipe
             elJudulFotoDinamis.innerText = tipeJudulFoto;
             elJudulFotoDinamis.style.color = warnaTema;
 
-            // --- TAMPILKAN FOTO EVENT JIKA ADA (Di Bawah) ---
             if (fotoEvent && fotoEvent.trim() !== '') {
                 elFotoEvent.src = fotoEvent;
                 elAreaFoto.style.display = 'block';
@@ -406,7 +407,6 @@
                 elFotoEvent.src = '';
             }
             
-            // --- 1. MUAT PERFORMING MEMBERS ---
             const container = document.getElementById('list-performing-members');
             const loading = document.getElementById('loading-performing');
             container.innerHTML = ''; loading.style.display = 'block';
@@ -461,7 +461,6 @@
                 });
             }
 
-            // --- 2. MUAT SETLIST EVENT ---
             const areaSetlist = document.getElementById('area-setlist-event');
             const containerSongs = document.getElementById('list-schedule-songs');
             const loadingSongs = document.getElementById('loading-schedule-songs');
@@ -502,7 +501,7 @@
         }
 
         // ==========================================
-        // FITUR 2: MEMBER
+        // FITUR 2: MEMBER (DENGAN FLOATING BADGE)
         // ==========================================
         let dataSemuaMember = []; 
         async function muatDaftarMember() {
@@ -523,12 +522,62 @@
             
             data.forEach(member => {
                 const namaPendek = member.nama_panggilan || member.nama.split(' ')[0];
-                const warnaStatus = getWarnaStatusMember(member.status);
+                const s = (member.status || '').toLowerCase();
+                
+                // Variabel untuk Floating Badge
+                let floatingIcons = ''; 
+                let floatBadge = ''; 
+                let imgStyle = ''; 
+                let h3Style = '';
+                let isFloating = false;
+
+                // Cek Status Khusus
+                if (s.includes('captain')) {
+                    floatingIcons = `<div class="icon-single">&#127894;&#65039;</div>`;
+                    floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, #d4af37, #b8860b);">CAPTAIN</div>`;
+                    imgStyle = `border: 3px solid #d4af37; box-shadow: 0 0 10px rgba(212, 175, 55, 0.6);`;
+                    h3Style = `color: #b8860b;`;
+                    isFloating = true;
+                } else if (s.includes('announced')) {
+                    floatingIcons = `<div class="icon-single">&#128226;</div>`;
+                    floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, #ad8a9e, #8a667b);">ANNOUNCED</div>`;
+                    imgStyle = `border: 3px solid #ad8a9e; box-shadow: 0 0 10px rgba(173, 138, 158, 0.6);`;
+                    h3Style = `color: #ad8a9e;`;
+                    isFloating = true;
+                } else if (s.includes('hiatus')) {
+                    floatingIcons = `<div class="icon-single">&#9208;&#65039;</div>`;
+                    floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, #ff9800, #e65100);">HIATUS</div>`;
+                    imgStyle = `border: 3px solid #ff9800; box-shadow: 0 0 10px rgba(255, 152, 0, 0.6);`;
+                    h3Style = `color: #e65100;`;
+                    isFloating = true;
+                } else if (s.includes('suspended')) {
+                    floatingIcons = `<div class="icon-single">&#128683;</div>`;
+                    floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, #333333, #000000);">SUSPENDED</div>`;
+                    imgStyle = `border: 3px solid #333333; box-shadow: 0 0 10px rgba(51, 51, 51, 0.6);`;
+                    h3Style = `color: #333333;`;
+                    isFloating = true;
+                }
+
+                // Jika tidak memakai floating badge, beri badge kotak biasa di bawah (Trainee/Anggota)
+                let bottomBadgeHtml = '';
+                if (!isFloating) {
+                    const infoStatus = getFormatStatusMember(member.status);
+                    bottomBadgeHtml = `<div style="margin-top:auto; width:100%;"><span class="status-badge ${infoStatus.kelas}">${infoStatus.teks}</span></div>`;
+                }
                 
                 const card = document.createElement('div');
                 card.className = 'card-member-mini';
                 card.onclick = () => tampilkanDetailMemberDariData(member);
-                card.innerHTML = `<img src="${member.foto_url}" alt="${member.nama}"><h3>${namaPendek}</h3><div style="margin-top:auto; width:100%;"><span class="status-badge ${warnaStatus}">${member.status || 'Anggota'}</span></div>`;
+                
+                card.innerHTML = `
+                    <div style="position:relative; width:100%; display:flex; justify-content:center;">
+                        ${floatingIcons}
+                        <img src="${member.foto_url}" alt="${member.nama}" style="${imgStyle}">
+                        ${floatBadge}
+                    </div>
+                    <h3 style="margin-top: 5px; ${h3Style}">${namaPendek}</h3>
+                    ${bottomBadgeHtml}
+                `;
                 container.appendChild(card);
             });
         }
@@ -536,12 +585,12 @@
         function tampilkanDetailMemberDariData(member) {
             bukaHalaman('view-member-detail');
             const container = document.getElementById('info-detail-member');
-            const warnaStatus = getWarnaStatusMember(member.status);
+            const infoStatus = getFormatStatusMember(member.status); 
             
             container.innerHTML = `
                 <img src="${member.foto_url}" alt="${member.nama}">
                 <h2 style="margin-top:0;">${member.nama_lengkap || member.nama}</h2>
-                <div style="text-align:center; margin-bottom:20px;"><span class="status-badge ${warnaStatus}">${member.status || 'Anggota'}</span></div>
+                <div style="text-align:center; margin-bottom:20px;"><span class="status-badge ${infoStatus.kelas}">${infoStatus.teks}</span></div>
                 <p><strong>Generasi:</strong> ${member.generasi || '<span style="color:#aaa; font-style:italic;">Belum diatur</span>'}</p>
                 <p><strong>Nama Panggilan:</strong> ${member.nama_panggilan || '-'}</p>
                 <p><strong>Tanggal Lahir:</strong> ${member.tanggal_lahir || '-'}</p>
