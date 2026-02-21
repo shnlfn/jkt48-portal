@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JKT48 Portal</title>
     
-    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="icon" type="image/png" href="favicon.png">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
@@ -52,6 +52,12 @@
         .status-single { background-color: #03a9f4; }
         .status-album { background-color: #4caf50; }
 
+        /* --- TIPE JADWAL (TEATER/EVENT) --- */
+        .badge-tipe-jadwal { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.8em; font-weight: bold; color: white; margin-right: 8px;}
+        .tipe-theater { background-color: #d81b60; }
+        .tipe-event { background-color: #004080; } 
+        .tipe-ramadan { background-color: #28a745; } 
+
         /* --- DESAIN MINI UNTUK MEMBER --- */
         .grid-members-mini { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; max-width: 1000px; margin: 0 auto; transition: max-width 0.3s; }
         .card-member-mini { background: white; border-radius: 10px; padding: 10px; width: 90px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px;}
@@ -64,11 +70,11 @@
         .list-container { display: flex; flex-direction: column; gap: 15px; max-width: 800px; margin: 0 auto;}
         .list-item { background: white; padding: 20px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-left: 5px solid #d81b60; transition: transform 0.2s; }
         .list-item:hover { transform: translateX(5px); }
-        .list-subtitle { font-weight: bold; color: #666; font-size: 0.9em; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;}
+        .list-subtitle { font-weight: bold; color: #666; font-size: 0.9em; display: flex; align-items: center; flex-wrap: wrap;}
         .list-title { font-size: 1.2em; color: #d81b60; margin: 5px 0 0 0; font-weight: bold;}
 
-        .badge-tipe-bawa { background-color: #6a1b9a; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
-        .badge-tipe-lagu { background-color: #00838f; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
+        .badge-tipe-bawa { background-color: #6a1b9a; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; font-weight: bold; margin-right: 5px;}
+        .badge-tipe-lagu { background-color: #00838f; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; font-weight: bold; margin-right: 5px;}
 
         /* --- TOMBOL KEMBALI & DETAIL --- */
         .btn-back { background-color: #666; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-bottom: 20px; font-weight: bold; transition: 0.2s;}
@@ -92,13 +98,12 @@
         .album-member-small img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #d81b60; margin-bottom: 5px; transition: 0.3s; background-color: #fff;}
         .album-member-small p { font-size: 0.75em; margin: 0; line-height: 1.2; color: #d81b60; font-weight: bold; }
         
-        /* --- CSS DYNAMIC EVENTS (TEATER & ALBUM) --- */
+        /* --- CSS DYNAMIC EVENTS --- */
         .icon-single { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 1.5em; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); z-index: 2; }
         .badge-single { position: absolute; top: 54px; left: 50%; transform: translateX(-50%); color: white; font-size: 0.55em; padding: 2px 8px; border-radius: 10px; font-weight: bold; border: 1px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 3; letter-spacing: 0.5px; white-space: nowrap; }
         .icon-dual-left { position: absolute; top: -15px; left: 15%; transform: translateX(-50%); font-size: 1.5em; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); z-index: 2; }
         .icon-dual-right { position: absolute; top: -15px; left: 85%; transform: translateX(-50%); font-size: 1.5em; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); z-index: 2; }
         
-        /* Album specific Center styles fallback */
         .center-crown { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 1.5em; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); z-index: 2; }
         .center-badge { position: absolute; top: 52px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #ffd700, #ffaa00); color: white; font-size: 0.55em; padding: 2px 6px; border-radius: 10px; font-weight: bold; border: 1px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 3; letter-spacing: 0.5px; }
         .album-member-small.is-center img { border: 3px solid #ffd700; box-shadow: 0 0 10px rgba(255, 215, 0, 0.6); }
@@ -120,7 +125,7 @@
 
     <div class="container">
         <div id="view-schedule" class="view-section active">
-            <h2>Jadwal Teater</h2>
+            <h2>Jadwal & Event JKT48</h2>
             <div class="filter-box">
                 <select id="filter-bulan">
                     <option value="1">Januari</option> <option value="2">Februari</option> <option value="3">Maret</option>
@@ -134,19 +139,39 @@
                 </select>
                 <button onclick="terapkanFilterJadwal()">Cari Jadwal</button>
             </div>
+            
+            <div class="filter-box" style="margin-top: -15px;">
+                <button id="btn-filter-semua" onclick="filterTipeJadwal('Semua')" style="background-color: #444; margin-right: 5px;">Semua</button>
+                <button id="btn-filter-theater" onclick="filterTipeJadwal('Theater')" style="background-color: #d81b60; margin-right: 5px;">Teater</button>
+                <button id="btn-filter-event" onclick="filterTipeJadwal('Event')" style="background-color: #004080;">Event</button>
+            </div>
+
             <div id="loading-schedule" style="text-align: center;">Memuat jadwal...</div>
             <div class="list-container" id="list-jadwal"></div>
         </div>
 
         <div id="view-schedule-detail" class="view-section">
             <h2 id="detail-judul-jadwal">Judul Jadwal</h2>
-            <p style="text-align: center; color: #666; margin-top: -15px; margin-bottom: 30px;" id="detail-waktu-jadwal">Waktu</p>
+            <p style="text-align: center; color: #666; margin-top: -15px; margin-bottom: 5px;" id="detail-waktu-jadwal">Waktu</p>
+            <p style="text-align: center; font-weight: bold; margin-top: 0; margin-bottom: 25px;" id="detail-lokasi-jadwal">&#128205; Lokasi</p>
             
-            <h4 style="text-align:center; color:#d81b60; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px; font-size: 0.9em;">Performing Members</h4>
+            <h4 id="teks-performing-members" style="text-align:center; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px; font-size: 0.9em;">Performing Members</h4>
             <div id="loading-performing" style="text-align: center; display: none;">Memuat member...</div>
             <div class="grid-members-mini" id="list-performing-members"></div>
 
-            <div style="text-align: center; margin-top: 35px;">
+            <div id="area-setlist-event" style="display: none; margin-top: 40px;">
+                <h4 id="teks-event-setlist" style="text-align:center; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px; font-size: 0.9em;">Event Setlist</h4>
+                <div id="loading-schedule-songs" style="text-align: center; display: none;">Memuat lagu...</div>
+                <div class="list-container" id="list-schedule-songs"></div>
+            </div>
+
+            <div id="area-foto-event" style="display: none; text-align: center; margin-top: 40px;">
+                <hr style="border: 0; height: 1px; background: #ddd; margin: 0 auto 20px auto; max-width: 800px;">
+                <h4 id="judul-foto-dinamis" style="text-align:center; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px; font-size: 0.9em;">Foto Event</h4>
+                <img id="detail-foto-event" src="" alt="Foto Acara" style="width: 100%; max-width: 800px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); object-fit: cover;">
+            </div>
+
+            <div style="text-align: center; margin-top: 45px;">
                 <button class="btn-back" onclick="bukaHalaman('view-schedule')">&#11013; Kembali ke Daftar Jadwal</button>
             </div>
         </div>
@@ -158,8 +183,10 @@
         </div>
 
         <div id="view-member-detail" class="view-section">
-            <button class="btn-back" onclick="bukaHalaman('view-member')">&#11013; Kembali</button>
             <div class="detail-box" id="info-detail-member"></div>
+            <div style="text-align: center; margin-top: 35px;">
+                <button class="btn-back" onclick="bukaHalaman('view-member')">&#11013; Kembali ke Daftar Member</button>
+            </div>
         </div>
 
         <div id="view-albums" class="view-section">
@@ -178,21 +205,22 @@
         </div>
 
         <div id="view-album-detail" class="view-section">
-            <button class="btn-back" onclick="bukaHalaman('view-albums')">&#11013; Kembali ke Diskografi</button>
             <h2 id="detail-judul-album">Judul Album</h2>
-            
             <div id="loading-album-members" style="text-align: center; display: none; font-size: 0.9em; color:#666;">Memuat performing members...</div>
             <div class="album-members-container" id="list-album-members"></div>
-            
             <hr id="garis-pemisah-album" style="border: 0; height: 1px; background: #f8bbd0; margin: 20px auto; max-width: 800px; display: none;">
-
             <div id="loading-songs-in-album" style="text-align: center; display: none;">Memuat lagu...</div>
             <div class="list-container" id="list-songs-in-album"></div>
+            <div style="text-align: center; margin-top: 35px;">
+                <button class="btn-back" onclick="bukaHalaman('view-albums')">&#11013; Kembali ke Diskografi</button>
+            </div>
         </div>
 
         <div id="view-song-detail" class="view-section">
-            <button class="btn-back" onclick="bukaHalaman('view-album-detail')">&#11013; Kembali ke Tracklist</button>
             <div class="detail-box" id="info-detail-song"></div>
+            <div style="text-align: center; margin-top: 35px;">
+                <button class="btn-back" onclick="bukaHalaman('view-album-detail')">&#11013; Kembali ke Tracklist</button>
+            </div>
         </div>
 
     </div>
@@ -244,12 +272,23 @@
         }
 
         // ==========================================
-        // FITUR 1: JADWAL DENGAN DYNAMIC EVENT ENGINE
+        // FITUR 1: JADWAL & EVENTS
         // ==========================================
+        let dataJadwalBulanIni = [];
+        let filterJadwalAktif = 'Semua';
+
         function terapkanFilterJadwal() {
             const thn = document.getElementById('filter-tahun').value;
             const bln = document.getElementById('filter-bulan').value;
             muatJadwalBerdasarkanBulan(thn, bln);
+        }
+
+        function filterTipeJadwal(tipe) {
+            filterJadwalAktif = tipe;
+            document.getElementById('btn-filter-semua').style.opacity = tipe === 'Semua' ? '1' : '0.5';
+            document.getElementById('btn-filter-theater').style.opacity = tipe === 'Theater' ? '1' : '0.5';
+            document.getElementById('btn-filter-event').style.opacity = tipe === 'Event' ? '1' : '0.5';
+            renderJadwalKeLayar();
         }
 
         async function muatJadwalBerdasarkanBulan(tahun, bulan) {
@@ -267,25 +306,107 @@
 
             loading.style.display = 'none';
             if (error) return container.innerHTML = `<p style="color:red;">Gagal memuat jadwal: ${error.message}</p>`;
-            if (data.length === 0) return container.innerHTML = `<p style="text-align:center;">Belum ada jadwal untuk bulan ini.</p>`;
+            
+            dataJadwalBulanIni = data;
+            renderJadwalKeLayar();
+        }
 
-            data.forEach(jadwal => {
+        function renderJadwalKeLayar() {
+            const container = document.getElementById('list-jadwal');
+            container.innerHTML = '';
+
+            let dataTampil = dataJadwalBulanIni;
+            
+            if (filterJadwalAktif === 'Theater') {
+                dataTampil = dataJadwalBulanIni.filter(j => !j.tipe_jadwal || j.tipe_jadwal === 'Theater');
+            } else if (filterJadwalAktif === 'Event') {
+                dataTampil = dataJadwalBulanIni.filter(j => j.tipe_jadwal && j.tipe_jadwal !== 'Theater');
+            }
+
+            if (dataTampil.length === 0) {
+                container.innerHTML = `<p style="text-align:center;">Belum ada jadwal/event untuk bulan ini.</p>`;
+                return;
+            }
+
+            dataTampil.forEach(jadwal => {
                 const tgl = new Date(jadwal.tanggal_waktu);
                 const formatWaktu = tgl.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute:'2-digit' }) + ' WIB';
 
+                const tipeJadwal = jadwal.tipe_jadwal || 'Theater';
+                let classBadgeTipe = 'tipe-theater';
+                let warnaTeksJudul = '#d81b60'; // Default Pink Theater
+
+                if (tipeJadwal !== 'Theater') {
+                    classBadgeTipe = 'tipe-event';
+                    warnaTeksJudul = '#004080'; // Biru Navy
+                    if (tipeJadwal.toLowerCase().includes('ramadhan') || tipeJadwal.toLowerCase().includes('ramadan')) {
+                        classBadgeTipe = 'tipe-ramadan';
+                        warnaTeksJudul = '#28a745'; // Hijau
+                    }
+                }
+
                 const div = document.createElement('div');
                 div.className = 'list-item';
-                div.onclick = () => muatDetailJadwal(jadwal.id, jadwal.judul_show, formatWaktu);
-                div.innerHTML = `<div><div class="list-subtitle">${formatWaktu}</div><h3 class="list-title">${jadwal.judul_show}</h3></div><div style="color: #d81b60; font-size: 24px;">&#10140;</div>`;
+                div.style.borderLeftColor = warnaTeksJudul; 
+                div.onclick = () => muatDetailJadwal(jadwal.id, jadwal.judul_show, formatWaktu, jadwal.lokasi, tipeJadwal, jadwal.foto_event); // Kirim foto_event ke fungsi
+                div.innerHTML = `
+                    <div>
+                        <div class="list-subtitle">
+                            <span class="badge-tipe-jadwal ${classBadgeTipe}">${tipeJadwal.toUpperCase()}</span>
+                            ${formatWaktu}
+                        </div>
+                        <h3 class="list-title" style="color: ${warnaTeksJudul};">${jadwal.judul_show}</h3>
+                    </div>
+                    <div style="color: ${warnaTeksJudul}; font-size: 24px;">&#10140;</div>
+                `;
                 container.appendChild(div);
             });
         }
 
-        async function muatDetailJadwal(scheduleId, judul, waktu) {
+        async function muatDetailJadwal(scheduleId, judul, waktu, lokasi, tipeJadwal, fotoEvent) {
             bukaHalaman('view-schedule-detail');
-            document.getElementById('detail-judul-jadwal').innerText = judul;
-            document.getElementById('detail-waktu-jadwal').innerText = waktu;
             
+            let warnaTema = '#d81b60'; 
+            let tipeJudulFoto = 'Foto Teater'; // Default Judul Foto
+
+            if (tipeJadwal !== 'Theater') {
+                warnaTema = '#004080'; 
+                tipeJudulFoto = 'Foto Event'; // Ubah Judul Foto jika Event
+                if (tipeJadwal.toLowerCase().includes('ramadhan') || tipeJadwal.toLowerCase().includes('ramadan')) {
+                    warnaTema = '#28a745'; 
+                }
+            }
+
+            const elJudul = document.getElementById('detail-judul-jadwal');
+            const elLokasi = document.getElementById('detail-lokasi-jadwal');
+            const elTeksMember = document.getElementById('teks-performing-members');
+            const elTeksSetlist = document.getElementById('teks-event-setlist');
+            const elAreaFoto = document.getElementById('area-foto-event');
+            const elFotoEvent = document.getElementById('detail-foto-event');
+            const elJudulFotoDinamis = document.getElementById('judul-foto-dinamis');
+
+            elJudul.innerText = judul;
+            elJudul.style.color = warnaTema;
+            document.getElementById('detail-waktu-jadwal').innerText = waktu;
+            elLokasi.innerHTML = `&#128205; ${lokasi || 'JKT48 Theater, fX Sudirman'}`;
+            elLokasi.style.color = warnaTema;
+            elTeksMember.style.color = warnaTema;
+            elTeksSetlist.style.color = warnaTema;
+            
+            // Atur Judul Foto Sesuai Tipe
+            elJudulFotoDinamis.innerText = tipeJudulFoto;
+            elJudulFotoDinamis.style.color = warnaTema;
+
+            // --- TAMPILKAN FOTO EVENT JIKA ADA (Di Bawah) ---
+            if (fotoEvent && fotoEvent.trim() !== '') {
+                elFotoEvent.src = fotoEvent;
+                elAreaFoto.style.display = 'block';
+            } else {
+                elAreaFoto.style.display = 'none';
+                elFotoEvent.src = '';
+            }
+            
+            // --- 1. MUAT PERFORMING MEMBERS ---
             const container = document.getElementById('list-performing-members');
             const loading = document.getElementById('loading-performing');
             container.innerHTML = ''; loading.style.display = 'block';
@@ -296,62 +417,88 @@
                 .order('is_center', { ascending: false });
 
             loading.style.display = 'none';
-            if (error) return container.innerHTML = `<p style="color:red;">Gagal memuat: ${error.message}</p>`;
+            if (error) container.innerHTML = `<p style="color:red;">Gagal memuat member: ${error.message}</p>`;
+            else if (data.length === 0) container.innerHTML = `<p style="text-align:center; color:#999; width:100%;">Member yang tampil belum diumumkan.</p>`;
+            else {
+                if (data.length === 12) container.style.maxWidth = '750px';
+                else container.style.maxWidth = '1000px'; 
 
-            // [PERBAIKAN FORMASI]: Paksa ukuran lebar kontainer agar membentuk pola simetris 6-6 jika pas 12 orang.
-            if (data.length === 12) {
-                container.style.maxWidth = '750px';
-            } else {
-                container.style.maxWidth = '1000px'; 
+                data.forEach(item => {
+                    const member = item.members;
+                    const namaPendek = member.nama_panggilan || member.nama.split(' ')[0];
+                    const card = document.createElement('div');
+                    card.className = 'card-member-mini';
+                    card.onclick = () => muatDetailMemberById(member.id);
+
+                    let activeEvents = [];
+                    if (item.is_graduation) activeEvents.push({ name: 'LAST SHOW', icon: '&#127800;', color1: '#e53935', color2: '#b71c1c', textColor: '#b71c1c' });
+                    if (item.is_center) activeEvents.push({ name: 'CENTER', icon: '&#128081;', color1: '#ffd700', color2: '#ffaa00', textColor: '#d4af37' });
+                    if (item.is_birthday) activeEvents.push({ name: 'STS', icon: '&#127874;', color1: '#4caf50', color2: '#2e7d32', textColor: '#2e7d32' });
+                    if (item.is_shonichi) activeEvents.push({ name: 'SHONICHI', icon: '&#10024;', color1: '#00bcd4', color2: '#00838f', textColor: '#00838f' });
+
+                    let floatingIcons = ''; let floatBadge = ''; let imgStyle = ''; let h3Style = '';
+
+                    if (activeEvents.length === 1) {
+                        const ev = activeEvents[0];
+                        floatingIcons = `<div class="icon-single">${ev.icon}</div>`;
+                        floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, ${ev.color1}, ${ev.color2});">${ev.name}</div>`;
+                        imgStyle = `border: 3px solid ${ev.color1}; box-shadow: 0 0 10px ${ev.color1}99;`;
+                        h3Style = `color: ${ev.textColor};`;
+                    } else if (activeEvents.length >= 2) {
+                        const ev1 = activeEvents[0]; const ev2 = activeEvents[1];
+                        floatingIcons = `<div class="icon-dual-left">${ev1.icon}</div><div class="icon-dual-right">${ev2.icon}</div>`;
+                        const badgeText = activeEvents.map(e => e.name).join(' &bull; ');
+                        floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, ${ev1.color1}, ${ev2.color1});">${badgeText}</div>`;
+                        imgStyle = `border: 3px solid transparent; background: linear-gradient(white, white) padding-box, linear-gradient(135deg, ${ev1.color1}, ${ev2.color1}) border-box; box-shadow: 0 0 10px ${ev1.color1}99;`;
+                        h3Style = `color: ${ev1.textColor};`;
+                    } else {
+                         h3Style = `color: ${warnaTema};`;
+                    }
+
+                    const fotoSrc = dapatkanURLFotoCustom(member.nama, judul, member.foto_url);
+                    card.innerHTML = `<div style="position:relative; width:100%; display:flex; justify-content:center;">${floatingIcons}<img src="${fotoSrc}" onerror="this.onerror=null; this.src='${member.foto_url}';" alt="${member.nama}" style="${imgStyle}">${floatBadge}</div><h3 style="margin-top: 5px; ${h3Style}">${namaPendek}</h3>`;
+                    container.appendChild(card);
+                });
             }
 
-            data.forEach(item => {
-                const member = item.members;
-                const namaPendek = member.nama_panggilan || member.nama.split(' ')[0];
-                
-                const card = document.createElement('div');
-                card.className = 'card-member-mini';
-                card.onclick = () => muatDetailMemberById(member.id);
+            // --- 2. MUAT SETLIST EVENT ---
+            const areaSetlist = document.getElementById('area-setlist-event');
+            const containerSongs = document.getElementById('list-schedule-songs');
+            const loadingSongs = document.getElementById('loading-schedule-songs');
+            
+            containerSongs.innerHTML = ''; areaSetlist.style.display = 'block'; loadingSongs.style.display = 'block';
 
-                let activeEvents = [];
-                if (item.is_graduation) activeEvents.push({ name: 'LAST SHOW', icon: '&#127800;', color1: '#e53935', color2: '#b71c1c', textColor: '#b71c1c' });
-                if (item.is_center) activeEvents.push({ name: 'CENTER', icon: '&#128081;', color1: '#ffd700', color2: '#ffaa00', textColor: '#d4af37' });
-                if (item.is_birthday) activeEvents.push({ name: 'STS', icon: '&#127874;', color1: '#4caf50', color2: '#2e7d32', textColor: '#2e7d32' });
-                if (item.is_shonichi) activeEvents.push({ name: 'SHONICHI', icon: '&#10024;', color1: '#00bcd4', color2: '#00838f', textColor: '#00838f' });
+            const { data: dataSongs, error: errSongs } = await supabaseClient
+                .from('schedule_songs')
+                .select('track_number, songs(id, judul_lagu, tipe_lagu, tipe_dibawakan)')
+                .eq('schedule_id', scheduleId)
+                .order('track_number', { ascending: true });
 
-                let floatingIcons = '';
-                let floatBadge = '';
-                let imgStyle = '';
-                let h3Style = '';
+            loadingSongs.style.display = 'none';
+            if (errSongs || !dataSongs || dataSongs.length === 0) {
+                areaSetlist.style.display = 'none'; 
+            } else {
+                dataSongs.forEach((item, index) => {
+                    const lagu = item.songs;
+                    const div = document.createElement('div');
+                    div.className = 'list-item';
+                    div.style.borderLeftColor = warnaTema;
+                    div.onclick = () => muatDetailLagu(lagu.id);
+                    
+                    const tampilanTrack = item.track_number ? `Track ${item.track_number}` : `Track ${index + 1}`;
+                    const badgeTipeLagu = lagu.tipe_lagu ? `<span class="badge-tipe-lagu" style="background-color:${warnaTema};">${lagu.tipe_lagu}</span>` : '';
+                    const badgeTipeDibawakan = lagu.tipe_dibawakan ? `<span class="badge-tipe-bawa">${lagu.tipe_dibawakan}</span>` : `<span class="badge-tipe-bawa">All Member</span>`;
 
-                if (activeEvents.length === 1) {
-                    const ev = activeEvents[0];
-                    floatingIcons = `<div class="icon-single">${ev.icon}</div>`;
-                    floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, ${ev.color1}, ${ev.color2});">${ev.name}</div>`;
-                    imgStyle = `border: 3px solid ${ev.color1}; box-shadow: 0 0 10px ${ev.color1}99;`;
-                    h3Style = `color: ${ev.textColor};`;
-                } else if (activeEvents.length >= 2) {
-                    const ev1 = activeEvents[0];
-                    const ev2 = activeEvents[1];
-                    floatingIcons = `<div class="icon-dual-left">${ev1.icon}</div><div class="icon-dual-right">${ev2.icon}</div>`;
-                    const badgeText = activeEvents.map(e => e.name).join(' &bull; ');
-                    floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, ${ev1.color1}, ${ev2.color1});">${badgeText}</div>`;
-                    imgStyle = `border: 3px solid transparent; background: linear-gradient(white, white) padding-box, linear-gradient(135deg, ${ev1.color1}, ${ev2.color1}) border-box; box-shadow: 0 0 10px ${ev1.color1}99;`;
-                    h3Style = `color: ${ev1.textColor};`;
-                }
-
-                const fotoSrc = dapatkanURLFotoCustom(member.nama, judul, member.foto_url);
-
-                card.innerHTML = `
-                    <div style="position:relative; width:100%; display:flex; justify-content:center;">
-                        ${floatingIcons}
-                        <img src="${fotoSrc}" onerror="this.onerror=null; this.src='${member.foto_url}';" alt="${member.nama}" style="${imgStyle}">
-                        ${floatBadge}
-                    </div>
-                    <h3 style="margin-top: 5px; ${h3Style}">${namaPendek}</h3>
-                `;
-                container.appendChild(card);
-            });
+                    div.innerHTML = `
+                        <div>
+                            <div class="list-subtitle">&#127925; ${tampilanTrack} &bull; ${badgeTipeLagu}${badgeTipeDibawakan}</div>
+                            <h3 class="list-title" style="color:${warnaTema};">${lagu.judul_lagu}</h3>
+                        </div>
+                        <div style="color: ${warnaTema}; font-size: 24px;">&#10140;</div>
+                    `;
+                    containerSongs.appendChild(div);
+                });
+            }
         }
 
         // ==========================================
@@ -475,7 +622,6 @@
 
             loadingMembers.style.display = 'none';
 
-            // [PERBAIKAN FORMASI ALBUM]
             if (dataMembers && dataMembers.length === 12) {
                 containerMembers.style.maxWidth = '550px'; 
             } else {
@@ -601,7 +747,6 @@
 
             loadingMembers.style.display = 'none';
 
-            // [PERBAIKAN FORMASI LAGU]
             if (finalMembersToRender && finalMembersToRender.length === 12) {
                 containerMembers.style.maxWidth = '550px'; 
             } else {
