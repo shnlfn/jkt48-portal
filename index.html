@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>JKT48 Portal</title>
     
-    <link rel="icon" type="image/png" href="favicon.png">
-    
+    <link rel="icon" type="image/png" href="favicon.png" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
@@ -14,8 +13,8 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #fce4ec; color: #333; margin: 0; padding: 0; }
         
         /* --- NAVIGASI BAR --- */
-        .navbar { background-color: #d81b60; padding: 15px 20px; display: flex; justify-content: center; gap: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
-        .navbar button { background-color: transparent; color: white; border: 2px solid white; padding: 10px 20px; border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s; }
+        .navbar { background-color: #d81b60; padding: 15px 20px; display: flex; justify-content: center; gap: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; flex-wrap: wrap; }
+        .navbar button { background-color: transparent; color: white; border: 2px solid white; padding: 8px 18px; border-radius: 25px; font-size: 15px; font-weight: bold; cursor: pointer; transition: all 0.3s; }
         .navbar button:hover, .navbar button.active { background-color: white; color: #d81b60; }
 
         /* --- KONTEN UTAMA --- */
@@ -28,36 +27,79 @@
 
         /* --- FILTER BOX --- */
         .filter-box { text-align: center; margin-bottom: 25px; }
-        .filter-box select { padding: 8px 12px; border-radius: 5px; border: 1px solid #d81b60; font-size: 1em; margin: 0 5px; outline: none; background: white; color: #d81b60; font-weight: bold; }
+        .filter-box select { padding: 8px 12px; border-radius: 5px; border: 1px solid #d81b60; font-size: 1em; margin: 0 5px; outline: none; background: white; color: #d81b60; font-weight: bold; cursor: pointer; }
         .filter-box button { background-color: #d81b60; color: white; border: none; padding: 9px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .filter-box button:hover { background-color: #ad144d; }
 
-        /* --- GRID & CARD --- */
+        /* --- GRID & CARD ALBUM --- */
         .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
-        .card { background: white; border-radius: 12px; padding: 15px; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: start; }
-        .card:hover { transform: translateY(-5px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
-        .card img { width: 100%; max-width: 120px; aspect-ratio: 1/1; border-radius: 50%; object-fit: cover; border: 3px solid #f8bbd0; margin-bottom: 10px; }
-        .card h3 { margin: 0 0 5px 0; font-size: 1.05em; color: #d81b60; }
-        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 15px; font-size: 0.75em; font-weight: bold; color: white; background-color: #ec407a; margin-top: auto; }
-        .status-trainee { background-color: #7e57c2; }
+        .card-album { background: white; border-radius: 12px; padding: 15px; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: start; }
+        .card-album:hover { transform: translateY(-5px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
+        .card-album img { border-radius: 10px; max-width: 150px; aspect-ratio: 1/1; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 10px; object-fit: cover;}
+        .card-album h3 { margin: 0 0 5px 0; font-size: 1.05em; color: #d81b60; }
 
-        /* --- LIST JADWAL --- */
-        .schedule-list { display: flex; flex-direction: column; gap: 15px; max-width: 800px; margin: 0 auto;}
-        .schedule-item { background: white; padding: 20px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-left: 5px solid #d81b60; transition: transform 0.2s; }
-        .schedule-item:hover { transform: translateX(5px); }
-        .schedule-date { font-weight: bold; color: #666; font-size: 0.9em; }
-        .schedule-title { font-size: 1.2em; color: #d81b60; margin: 5px 0 0 0; font-weight: bold;}
+        /* --- BADGE STATUS MEMBER --- */
+        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 15px; font-size: 0.75em; font-weight: bold; color: white; background-color: #ec407a; margin-top: auto; text-align: center; line-height: 1.2;}
+        .status-anggota { background-color: #ec407a; } /* Pink JKT48 */
+        .status-trainee { background-color: #7e57c2; } /* Purple */
+        .status-suspended { background-color: #000000; } /* Black */
+        .status-hiatus { background-color: #ff9800; } /* Orange */
+        .status-announced { background-color: #696969; } /* Smokin (Dim Gray) */
+        .status-graduated { background-color: #B2BEB5; color: #222; border: 1px solid #999;} /* Ash Gray dengan teks gelap */
+        .status-captain { background-color: #d4af37; color: #000; box-shadow: 0 0 5px rgba(212, 175, 55, 0.5); } /* Emas */
+        
+        /* Badge Khusus Album/Lagu */
+        .status-setlist { background-color: #ff9800; }
+        .status-single { background-color: #03a9f4; }
+        .status-album { background-color: #4caf50; }
+
+        /* --- DESAIN MINI UNTUK MEMBER --- */
+        .grid-members-mini { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; max-width: 1000px; margin: 0 auto; }
+        .card-member-mini { background: white; border-radius: 10px; padding: 10px; width: 90px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 5px;}
+        .card-member-mini:hover { transform: translateY(-3px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .card-member-mini img { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; border: 2px solid #f8bbd0; }
+        .card-member-mini h3 { margin: 0; font-size: 0.75em; color: #d81b60; line-height: 1.1; }
+        .card-member-mini .status-badge { font-size: 0.55em; padding: 2px 5px; width: 100%; box-sizing: border-box; }
+
+        /* --- LIST JADWAL & LAGU --- */
+        .list-container { display: flex; flex-direction: column; gap: 15px; max-width: 800px; margin: 0 auto;}
+        .list-item { background: white; padding: 20px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-left: 5px solid #d81b60; transition: transform 0.2s; }
+        .list-item:hover { transform: translateX(5px); }
+        .list-subtitle { font-weight: bold; color: #666; font-size: 0.9em; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;}
+        .list-title { font-size: 1.2em; color: #d81b60; margin: 5px 0 0 0; font-weight: bold;}
+
+        .badge-tipe-bawa { background-color: #6a1b9a; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
+        .badge-tipe-lagu { background-color: #00838f; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
 
         /* --- TOMBOL KEMBALI & DETAIL --- */
         .btn-back { background-color: #666; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-bottom: 20px; }
         .btn-back:hover { background-color: #444; }
-        .detail-box { background: white; padding: 30px; border-radius: 15px; max-width: 600px; margin: 0 auto; text-align: left; }
+        
+        .detail-box { background: white; padding: 30px; border-radius: 15px; max-width: 700px; margin: 0 auto; text-align: left; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .detail-box img { width: 200px; height: 200px; border-radius: 15px; object-fit: cover; display: block; margin: 0 auto 20px auto; }
         .detail-box p { margin: 10px 0; font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 5px;}
+        
+        .lyrics-area { background-color: #fff0f5; padding: 25px; border-radius: 10px; margin-top: 20px; font-size: 1.1em; line-height: 1.8; text-align: center; color: #444; font-style: italic;}
+        .song-links { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: center;}
+        .song-links a { text-decoration: none; padding: 8px 15px; border-radius: 5px; color: white; font-size: 0.9em; font-weight: bold; }
+        .link-yt { background-color: #ff0000; }
+        .link-sp { background-color: #1db954; }
+        .link-am { background-color: #fa243c; }
 
-        @media (max-width: 1024px) { #list-performing-members { grid-template-columns: repeat(4, 1fr) !important; } }
-        @media (max-width: 768px) { #list-performing-members { grid-template-columns: repeat(3, 1fr) !important; } .card img { max-width: 100px; } .card h3 { font-size: 0.9em; } }
-        @media (max-width: 480px) { #list-performing-members { grid-template-columns: repeat(2, 1fr) !important; } }
+        /* Shonichi Members & Center CSS */
+        .album-members-container { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin-bottom: 15px; max-width: 800px; margin-left: auto; margin-right: auto;}
+        .album-member-small { text-align: center; width: 75px; cursor: pointer; transition: transform 0.2s; position: relative; }
+        .album-member-small:hover { transform: translateY(-4px); }
+        
+        /* [PENTING]: Pastikan object-fit cover agar foto lokal tidak gepeng */
+        .album-member-small img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #d81b60; margin-bottom: 5px; transition: 0.3s; background-color: #fff;}
+        .album-member-small p { font-size: 0.75em; margin: 0; line-height: 1.2; color: #d81b60; font-weight: bold; }
+        
+        .center-crown { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 1.5em; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); z-index: 2; }
+        .center-badge { position: absolute; top: 50px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #ffd700, #ffaa00); color: white; font-size: 0.55em; padding: 2px 6px; border-radius: 10px; font-weight: bold; border: 1px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 3; letter-spacing: 0.5px; }
+        .album-member-small.is-center img { border: 3px solid #ffd700; box-shadow: 0 0 10px rgba(255, 215, 0, 0.6); }
+        .album-member-small.is-center p { color: #d4af37; } 
+
     </style>
 </head>
 <body>
@@ -65,6 +107,7 @@
     <div class="navbar">
         <button id="btn-schedule" class="active" onclick="bukaHalaman('view-schedule')">Schedules</button>
         <button id="btn-member" onclick="bukaHalaman('view-member')">Members</button>
+        <button id="btn-song" onclick="bukaHalaman('view-albums')">Songs</button>
     </div>
 
     <div class="container">
@@ -84,49 +127,110 @@
                 <button onclick="terapkanFilterJadwal()">Cari Jadwal</button>
             </div>
             <div id="loading-schedule" style="text-align: center;">Memuat jadwal...</div>
-            <div class="schedule-list" id="list-jadwal"></div>
+            <div class="list-container" id="list-jadwal"></div>
         </div>
 
         <div id="view-schedule-detail" class="view-section">
-            <button class="btn-back" onclick="bukaHalaman('view-schedule')">&#11013; Kembali ke Jadwal</button>
+            <button class="btn-back" onclick="bukaHalaman('view-schedule')">&#11013; Kembali</button>
             <h2 id="detail-judul-jadwal">Judul Jadwal</h2>
             <p style="text-align: center; color: #666; margin-top: -15px; margin-bottom: 30px;" id="detail-waktu-jadwal">Waktu</p>
             <div id="loading-performing" style="text-align: center; display: none;">Memuat member...</div>
-            <div class="grid-container" id="list-performing-members"></div>
+            
+            <div class="grid-members-mini" id="list-performing-members"></div>
         </div>
 
         <div id="view-member" class="view-section">
             <h2>Ensiklopedia Member JKT48</h2>
             <div id="loading-member" style="text-align: center;">Memuat member...</div>
-            <div class="grid-container" id="list-member"></div>
+            <div class="grid-members-mini" id="list-member"></div>
         </div>
 
         <div id="view-member-detail" class="view-section">
-            <button class="btn-back" onclick="bukaHalaman('view-member')">&#11013; Kembali ke Daftar Member</button>
+            <button class="btn-back" onclick="bukaHalaman('view-member')">&#11013; Kembali</button>
             <div class="detail-box" id="info-detail-member"></div>
         </div>
+
+        <div id="view-albums" class="view-section">
+            <h2>Diskografi & Setlist</h2>
+            <div class="filter-box">
+                <select id="filter-tipe-album" onchange="terapkanFilterAlbum()">
+                    <option value="Semua">Semua Tipe</option>
+                    <option value="Setlist">Setlist</option>
+                    <option value="Single">Single</option>
+                    <option value="Album">Album</option>
+                    <option value="Project">Project</option>
+                </select>
+            </div>
+            <div id="loading-albums" style="text-align: center;">Memuat diskografi...</div>
+            <div class="grid-container" id="list-albums"></div>
+        </div>
+
+        <div id="view-album-detail" class="view-section">
+            <button class="btn-back" onclick="bukaHalaman('view-albums')">&#11013; Kembali ke Diskografi</button>
+            <h2 id="detail-judul-album">Judul Album</h2>
+            
+            <div id="loading-album-members" style="text-align: center; display: none; font-size: 0.9em; color:#666;">Memuat performing members...</div>
+            <div class="album-members-container" id="list-album-members"></div>
+            
+            <hr id="garis-pemisah-album" style="border: 0; height: 1px; background: #f8bbd0; margin: 20px auto; max-width: 800px; display: none;">
+
+            <div id="loading-songs-in-album" style="text-align: center; display: none;">Memuat lagu...</div>
+            <div class="list-container" id="list-songs-in-album"></div>
+        </div>
+
+        <div id="view-song-detail" class="view-section">
+            <button class="btn-back" onclick="bukaHalaman('view-album-detail')">&#11013; Kembali ke Tracklist</button>
+            <div class="detail-box" id="info-detail-song"></div>
+        </div>
+
     </div>
 
     <script>
-        // GANTI DENGAN URL DAN KEY ANON KAMU
+        // --- KONFIGURASI SUPABASE ---
         const SUPABASE_URL = 'https://rwxqcpyckvygxkbmxbun.supabase.co'; 
         const SUPABASE_ANON_KEY = 'sb_publishable_49vkEEomI33CyOPTDpGb4w_Tpmx_ADJ'; 
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // --- SISTEM NAVIGASI ---
         function bukaHalaman(idHalaman) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             document.getElementById(idHalaman).classList.add('active');
 
             document.getElementById('btn-schedule').classList.remove('active');
             document.getElementById('btn-member').classList.remove('active');
+            document.getElementById('btn-song').classList.remove('active');
             
-            if(idHalaman === 'view-schedule' || idHalaman === 'view-schedule-detail') {
-                document.getElementById('btn-schedule').classList.add('active');
-            } else {
-                document.getElementById('btn-member').classList.add('active');
-            }
+            if(idHalaman.includes('schedule')) document.getElementById('btn-schedule').classList.add('active');
+            else if(idHalaman.includes('member')) document.getElementById('btn-member').classList.add('active');
+            else if(idHalaman.includes('album') || idHalaman.includes('song')) document.getElementById('btn-song').classList.add('active');
         }
 
+        function getWarnaStatusMember(status) {
+            if (!status) return 'status-anggota'; 
+            const s = status.toLowerCase();
+            if (s.includes('trainee')) return 'status-trainee';
+            if (s.includes('graduated') || s.includes('graduation') && !s.includes('announced')) return 'status-graduated';
+            if (s.includes('announced')) return 'status-announced';
+            if (s.includes('hiatus')) return 'status-hiatus';
+            if (s.includes('captain')) return 'status-captain';
+            if (s.includes('suspended')) return 'status-suspended';
+            return 'status-anggota'; 
+        }
+
+        // [FUNGSI BARU] Pendeteksi Foto Khusus Album/Setlist Lokal
+        function dapatkanURLFotoCustom(namaMember, judulAlbum, fotoAsli) {
+            if (judulAlbum && judulAlbum.toLowerCase() === 'pertaruhan cinta') {
+                // Mengubah "Angelina Christy" menjadi "angelina_christy"
+                const namaFormatTeks = namaMember.toLowerCase().replace(/\s+/g, '_');
+                return `images/setlist/pertaruhan_cinta/${namaFormatTeks}.jpg`;
+            }
+            // Jika bukan album Pertaruhan Cinta, gunakan foto bawaan
+            return fotoAsli;
+        }
+
+        // ==========================================
+        // FITUR 1: JADWAL
+        // ==========================================
         function terapkanFilterJadwal() {
             const thn = document.getElementById('filter-tahun').value;
             const bln = document.getElementById('filter-bulan').value;
@@ -136,39 +240,28 @@
         async function muatJadwalBerdasarkanBulan(tahun, bulan) {
             const container = document.getElementById('list-jadwal');
             const loading = document.getElementById('loading-schedule');
-            
-            container.innerHTML = '';
-            loading.style.display = 'block';
+            container.innerHTML = ''; loading.style.display = 'block';
             
             const awalBulan = new Date(tahun, bulan - 1, 1).toISOString();
             const akhirBulan = new Date(tahun, bulan, 0, 23, 59, 59).toISOString();
 
             const { data, error } = await supabaseClient
-                .from('theater_schedules')
-                .select('*')
-                .gte('tanggal_waktu', awalBulan)
-                .lte('tanggal_waktu', akhirBulan)
+                .from('theater_schedules').select('*')
+                .gte('tanggal_waktu', awalBulan).lte('tanggal_waktu', akhirBulan)
                 .order('tanggal_waktu', { ascending: true });
 
             loading.style.display = 'none';
-
             if (error) return container.innerHTML = `<p style="color:red;">Gagal memuat jadwal: ${error.message}</p>`;
-            if (data.length === 0) return container.innerHTML = `<p style="text-align:center;">Belum ada jadwal untuk ${document.getElementById('filter-bulan').options[bulan-1].text} ${tahun}.</p>`;
+            if (data.length === 0) return container.innerHTML = `<p style="text-align:center;">Belum ada jadwal untuk bulan ini.</p>`;
 
             data.forEach(jadwal => {
                 const tgl = new Date(jadwal.tanggal_waktu);
                 const formatWaktu = tgl.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute:'2-digit' }) + ' WIB';
 
                 const div = document.createElement('div');
-                div.className = 'schedule-item';
+                div.className = 'list-item';
                 div.onclick = () => muatDetailJadwal(jadwal.id, jadwal.judul_show, formatWaktu);
-                div.innerHTML = `
-                    <div>
-                        <div class="schedule-date">${formatWaktu}</div>
-                        <h3 class="schedule-title">${jadwal.judul_show}</h3>
-                    </div>
-                    <div style="color: #d81b60; font-size: 24px;">&#10140;</div>
-                `;
+                div.innerHTML = `<div><div class="list-subtitle">${formatWaktu}</div><h3 class="list-title">${jadwal.judul_show}</h3></div><div style="color: #d81b60; font-size: 24px;">&#10140;</div>`;
                 container.appendChild(div);
             });
         }
@@ -180,82 +273,56 @@
             
             const container = document.getElementById('list-performing-members');
             const loading = document.getElementById('loading-performing');
-            
-            container.style.gridTemplateColumns = '';
-            container.style.justifyContent = '';
-            container.innerHTML = '';
-            loading.style.display = 'block';
+            container.innerHTML = ''; loading.style.display = 'block';
 
-            // [PERBAIKAN]: Menambahkan 'generasi' di perintah select agar ditarik dari database
-            const { data, error } = await supabaseClient
-                .from('performing_members')
-                .select(`is_birthday, members ( id, nama, nama_panggilan, foto_url, status, generasi )`)
-                .eq('schedule_id', scheduleId);
+            const { data, error } = await supabaseClient.from('performing_members')
+                .select(`is_birthday, members ( id, nama, nama_panggilan, foto_url, status, generasi )`).eq('schedule_id', scheduleId);
 
             loading.style.display = 'none';
             if (error) return container.innerHTML = `<p style="color:red;">Gagal memuat: ${error.message}</p>`;
 
-            const totalMembers = data.length;
-            if (window.innerWidth > 1024) {
-                container.style.justifyContent = 'center';
-                if (totalMembers === 16) {
-                    container.style.gridTemplateColumns = 'repeat(8, 140px)';
-                } else if (totalMembers === 12) {
-                    container.style.gridTemplateColumns = 'repeat(6, 140px)';
-                } else {
-                    container.style.gridTemplateColumns = 'repeat(auto-fit, 140px)';
-                }
-            }
-
             data.forEach(item => {
                 const member = item.members;
-                const warnaStatus = member.status === 'Trainee' ? 'status-trainee' : '';
-                const namaTampil = item.is_birthday ? `&#127874; ${member.nama_panggilan || member.nama}` : (member.nama_panggilan || member.nama);
+                const namaPendek = member.nama_panggilan || member.nama.split(' ')[0];
+                const namaTampil = item.is_birthday ? `&#127874; ${namaPendek}` : namaPendek;
+                const warnaStatus = getWarnaStatusMember(member.status);
 
                 const card = document.createElement('div');
-                card.className = 'card';
+                card.className = 'card-member-mini';
                 card.onclick = () => muatDetailMemberById(member.id);
-                card.innerHTML = `
-                    <img src="${member.foto_url}" alt="${member.nama}">
-                    <h3>${namaTampil}</h3>
-                    <span class="status-badge ${warnaStatus}">${member.status}</span>
-                `;
+                card.innerHTML = `<img src="${member.foto_url}" alt="${member.nama}"><h3>${namaTampil}</h3><span class="status-badge ${warnaStatus}">${member.status || 'Anggota'}</span>`;
                 container.appendChild(card);
             });
         }
 
+        // ==========================================
+        // FITUR 2: MEMBER
+        // ==========================================
         let dataSemuaMember = []; 
-
         async function muatDaftarMember() {
             const container = document.getElementById('list-member');
             const loading = document.getElementById('loading-member');
-
-            if(dataSemuaMember.length > 0) {
-                loading.style.display = 'none';
-                return;
-            }
+            if(dataSemuaMember.length > 0) { loading.style.display = 'none'; return; }
 
             const { data, error } = await supabaseClient
                 .from('members')
                 .select('*')
+                .neq('status', 'Graduated') 
                 .order('nama', { ascending: true });
 
             loading.style.display = 'none';
             if (error) return container.innerHTML = `<p style="color:red;">Gagal memuat: ${error.message}</p>`;
 
-            dataSemuaMember = data; 
-            container.innerHTML = '';
-
+            dataSemuaMember = data; container.innerHTML = '';
+            
             data.forEach(member => {
-                const warnaStatus = member.status === 'Trainee' ? 'status-trainee' : '';
+                const namaPendek = member.nama_panggilan || member.nama.split(' ')[0];
+                const warnaStatus = getWarnaStatusMember(member.status);
+                
                 const card = document.createElement('div');
-                card.className = 'card';
+                card.className = 'card-member-mini';
                 card.onclick = () => tampilkanDetailMemberDariData(member);
-                card.innerHTML = `
-                    <img src="${member.foto_url}" alt="${member.nama}">
-                    <h3>${member.nama_panggilan || member.nama}</h3>
-                    <span class="status-badge ${warnaStatus}">${member.status}</span>
-                `;
+                card.innerHTML = `<img src="${member.foto_url}" alt="${member.nama}"><h3>${namaPendek}</h3><span class="status-badge ${warnaStatus}">${member.status || 'Anggota'}</span>`;
                 container.appendChild(card);
             });
         }
@@ -263,19 +330,16 @@
         function tampilkanDetailMemberDariData(member) {
             bukaHalaman('view-member-detail');
             const container = document.getElementById('info-detail-member');
-            const warnaStatus = member.status === 'Trainee' ? 'status-trainee' : '';
-
-            // [PERBAIKAN]: Menambahkan baris untuk menampilkan Generasi
+            const warnaStatus = getWarnaStatusMember(member.status);
+            
             container.innerHTML = `
                 <img src="${member.foto_url}" alt="${member.nama}">
                 <h2 style="margin-top:0;">${member.nama_lengkap || member.nama}</h2>
-                <div style="text-align:center; margin-bottom:20px;">
-                    <span class="status-badge ${warnaStatus}">${member.status}</span>
-                </div>
+                <div style="text-align:center; margin-bottom:20px;"><span class="status-badge ${warnaStatus}">${member.status || 'Anggota'}</span></div>
                 <p><strong>Generasi:</strong> ${member.generasi || '<span style="color:#aaa; font-style:italic;">Belum diatur</span>'}</p>
                 <p><strong>Nama Panggilan:</strong> ${member.nama_panggilan || '-'}</p>
                 <p><strong>Tanggal Lahir:</strong> ${member.tanggal_lahir || '-'}</p>
-                <p><strong>Golongan Darah:</strong> ${member.golongan_darah || '-'}</p>
+                <p><strong>Gol. Darah:</strong> ${member.golongan_darah || '-'}</p>
                 <p><strong>Horoskop:</strong> ${member.horoskop || '-'}</p>
                 <p><strong>Tinggi Badan:</strong> ${member.tinggi_badan || '-'}</p>
             `;
@@ -283,22 +347,227 @@
 
         async function muatDetailMemberById(memberId) {
             bukaHalaman('view-member-detail');
-            const container = document.getElementById('info-detail-member');
-            container.innerHTML = `<p style="text-align:center;">Memuat profil...</p>`;
-
-            const { data, error } = await supabaseClient
-                .from('members').select('*').eq('id', memberId).single();
-
-            if (!error && data) tampilkanDetailMemberDariData(data);
+            document.getElementById('info-detail-member').innerHTML = `<p style="text-align:center;">Memuat profil...</p>`;
+            const { data } = await supabaseClient.from('members').select('*').eq('id', memberId).single();
+            if (data) tampilkanDetailMemberDariData(data);
         }
 
-        // --- INISIALISASI ---
+        // ==========================================
+        // FITUR 3: SONGS / LAGU & ALBUM
+        // ==========================================
+        let dataSemuaAlbum = [];
+
+        async function muatDaftarAlbum() {
+            const container = document.getElementById('list-albums');
+            const loading = document.getElementById('loading-albums');
+            
+            if(dataSemuaAlbum.length === 0) { 
+                loading.style.display = 'block';
+                const { data, error } = await supabaseClient.from('albums').select('*').order('judul_album', { ascending: true });
+                loading.style.display = 'none';
+                if (error) return container.innerHTML = `<p style="color:red;">Gagal memuat: ${error.message}</p>`;
+                dataSemuaAlbum = data; 
+            }
+            renderAlbumKeLayar(dataSemuaAlbum);
+        }
+
+        function terapkanFilterAlbum() {
+            const tipeTerpilih = document.getElementById('filter-tipe-album').value;
+            if (tipeTerpilih === 'Semua') renderAlbumKeLayar(dataSemuaAlbum);
+            else renderAlbumKeLayar(dataSemuaAlbum.filter(album => album.tipe_album === tipeTerpilih));
+        }
+
+        function renderAlbumKeLayar(dataAlbum) {
+            const container = document.getElementById('list-albums');
+            container.innerHTML = '';
+            if (dataAlbum.length === 0) {
+                container.innerHTML = `<p style="text-align:center; width:100%; grid-column: 1 / -1; color:#666;">Belum ada diskografi untuk tipe ini.</p>`;
+                return;
+            }
+            dataAlbum.forEach(album => {
+                const cover = album.cover_url || 'https://jkt48.com/images/logo.svg'; 
+                let warnaBadge = 'status-setlist';
+                if (album.tipe_album === 'Single') warnaBadge = 'status-single';
+                else if (album.tipe_album === 'Album') warnaBadge = 'status-album';
+
+                const card = document.createElement('div');
+                card.className = 'card-album';
+                card.onclick = () => muatDaftarLaguDiAlbum(album.id, album.judul_album);
+                card.innerHTML = `<img src="${cover}" alt="${album.judul_album}"><h3>${album.judul_album}</h3><span class="status-badge ${warnaBadge}">${album.tipe_album || 'Setlist'}</span>`;
+                container.appendChild(card);
+            });
+        }
+
+        async function muatDaftarLaguDiAlbum(albumId, judulAlbum) {
+            bukaHalaman('view-album-detail');
+            document.getElementById('detail-judul-album').innerText = judulAlbum;
+            
+            const containerMembers = document.getElementById('list-album-members');
+            const loadingMembers = document.getElementById('loading-album-members');
+            const garisPemisah = document.getElementById('garis-pemisah-album');
+            
+            containerMembers.innerHTML = ''; garisPemisah.style.display = 'none'; loadingMembers.style.display = 'block';
+
+            const { data: dataMembers, error: errMembers } = await supabaseClient
+                .from('album_performing_members')
+                .select('is_center, members(id, nama, nama_panggilan, foto_url)')
+                .eq('album_id', albumId)
+                .order('is_center', { ascending: false }); 
+
+            loadingMembers.style.display = 'none';
+
+            if (!errMembers && dataMembers && dataMembers.length > 0) {
+                garisPemisah.style.display = 'block'; 
+                
+                dataMembers.forEach(item => {
+                    const m = item.members;
+                    if(m) {
+                        const div = document.createElement('div');
+                        div.className = item.is_center ? 'album-member-small is-center' : 'album-member-small';
+                        div.onclick = () => muatDetailMemberById(m.id);
+                        
+                        const namaPendek = m.nama_panggilan || m.nama.split(' ')[0];
+                        const crownHtml = item.is_center ? `<div class="center-crown">&#128081;</div><div class="center-badge">CENTER</div>` : '';
+
+                        // [LOGIKA FOTO LOKAL AKTIF]: Menggunakan fungsi helper dan `onerror` fallback
+                        const fotoSrc = dapatkanURLFotoCustom(m.nama, judulAlbum, m.foto_url);
+
+                        div.innerHTML = `${crownHtml}<img src="${fotoSrc}" alt="${m.nama}"><p>${namaPendek}</p>`;
+                        containerMembers.appendChild(div);
+                    }
+                });
+            }
+
+            const containerSongs = document.getElementById('list-songs-in-album');
+            const loadingSongs = document.getElementById('loading-songs-in-album');
+            containerSongs.innerHTML = ''; loadingSongs.style.display = 'block';
+
+            const { data: dataSongs, error: errSongs } = await supabaseClient
+                .from('songs')
+                .select('id, judul_lagu, tipe_lagu, track_number, tipe_dibawakan')
+                .eq('album_id', albumId)
+                .order('track_number', { ascending: true, nullsFirst: false }) 
+                .order('id', { ascending: true }); 
+            
+            loadingSongs.style.display = 'none';
+            if (errSongs) return containerSongs.innerHTML = `<p style="color:red;">Gagal memuat lagu: ${errSongs.message}</p>`;
+
+            dataSongs.forEach((lagu, index) => {
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.onclick = () => muatDetailLagu(lagu.id);
+                
+                const tampilanTrack = lagu.track_number ? `Track ${lagu.track_number}` : `Track ${index + 1}`;
+                const badgeTipeLagu = lagu.tipe_lagu ? `<span class="badge-tipe-lagu">${lagu.tipe_lagu}</span>` : '';
+                const badgeTipeDibawakan = lagu.tipe_dibawakan ? `<span class="badge-tipe-bawa">${lagu.tipe_dibawakan}</span>` : `<span class="badge-tipe-bawa">All Member</span>`;
+
+                div.innerHTML = `
+                    <div>
+                        <div class="list-subtitle">
+                            &#127925; ${tampilanTrack} &bull; 
+                            ${badgeTipeLagu}
+                            ${badgeTipeDibawakan}
+                        </div>
+                        <h3 class="list-title">${lagu.judul_lagu}</h3>
+                    </div>
+                    <div style="color: #d81b60; font-size: 24px;">&#10140;</div>
+                `;
+                containerSongs.appendChild(div);
+            });
+        }
+
+        async function muatDetailLagu(songId) {
+            bukaHalaman('view-song-detail');
+            const container = document.getElementById('info-detail-song');
+            container.innerHTML = `<p style="text-align:center;">Memuat lirik...</p>`;
+
+            const { data, error } = await supabaseClient.from('songs').select('*, albums(id, judul_album)').eq('id', songId).single();
+
+            if (error || !data) return container.innerHTML = `<p style="color:red;">Gagal memuat lagu.</p>`;
+
+            let linksHtml = '';
+            if(data.link_youtube) linksHtml += `<a href="${data.link_youtube}" target="_blank" class="link-yt">&#9654; YouTube</a>`;
+            if(data.link_spotify) linksHtml += `<a href="${data.link_spotify}" target="_blank" class="link-sp">&#9835; Spotify</a>`;
+            if(data.link_apple_music) linksHtml += `<a href="${data.link_apple_music}" target="_blank" class="link-am">&#9834; Apple Music</a>`;
+
+            const tipeDibawakanText = data.tipe_dibawakan || 'All Member';
+            const badgeTipeDibawakan = `<span class="badge-tipe-bawa">${tipeDibawakanText}</span>`;
+            const judulAlbumLagu = data.albums?.judul_album || '';
+
+            container.innerHTML = `
+                <h2 style="margin-top:0; margin-bottom: 5px;">${data.judul_lagu}</h2>
+                <div style="text-align:center; color: #666; font-weight: bold; margin-bottom: 25px;">${judulAlbumLagu || '-'}</div>
+                
+                <p><strong>Kategori:</strong> ${data.tipe_lagu || '-'}</p>
+                <p><strong>Tipe:</strong> ${badgeTipeDibawakan}</p>
+                <p><strong>Tanggal Dibawakan/Rilis:</strong> ${data.tanggal_dibawakan || '<span style="color:#aaa; font-style:italic;">Belum diisi</span>'}</p>
+                
+                <div style="margin-top: 30px; margin-bottom: 10px;">
+                    <h4 style="text-align:center; color:#d81b60; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px; font-size: 0.9em;">Performing Members</h4>
+                    <div id="loading-song-members" style="text-align: center; font-size: 0.85em; color:#666;">Memuat foto member...</div>
+                    <div class="album-members-container" id="list-song-members"></div>
+                </div>
+
+                ${linksHtml ? `<div class="song-links">${linksHtml}</div>` : ''}
+
+                <div class="lyrics-area">${data.lirik || 'Lirik belum tersedia.'}</div>
+            `;
+
+            const containerMembers = document.getElementById('list-song-members');
+            const loadingMembers = document.getElementById('loading-song-members');
+
+            let { data: specificMembers } = await supabaseClient
+                .from('song_performing_members')
+                .select('is_center, members(id, nama, nama_panggilan, foto_url)')
+                .eq('song_id', songId)
+                .order('is_center', { ascending: false });
+
+            let finalMembersToRender = specificMembers;
+
+            if ((!specificMembers || specificMembers.length === 0) && tipeDibawakanText !== 'Unit Song' && tipeDibawakanText !== 'Solo') {
+                const { data: albumMembers } = await supabaseClient
+                    .from('album_performing_members')
+                    .select('is_center, members(id, nama, nama_panggilan, foto_url)')
+                    .eq('album_id', data.albums.id)
+                    .order('is_center', { ascending: false });
+                
+                finalMembersToRender = albumMembers;
+            }
+
+            loadingMembers.style.display = 'none';
+
+            if (finalMembersToRender && finalMembersToRender.length > 0) {
+                finalMembersToRender.forEach(item => {
+                    const m = item.members;
+                    if(m) {
+                        const isCenterUI = item.is_center && tipeDibawakanText !== 'All Member';
+                        const div = document.createElement('div');
+                        div.className = isCenterUI ? 'album-member-small is-center' : 'album-member-small';
+                        div.onclick = () => muatDetailMemberById(m.id); 
+                        
+                        const namaPendek = m.nama_panggilan || m.nama.split(' ')[0];
+                        const crownHtml = isCenterUI ? `<div class="center-crown">&#128081;</div><div class="center-badge">CENTER</div>` : '';
+
+                        // [LOGIKA FOTO LOKAL AKTIF DI HALAMAN LAGU]
+                        const fotoSrc = dapatkanURLFotoCustom(m.nama, judulAlbumLagu, m.foto_url);
+
+                        div.innerHTML = `${crownHtml}<img src="${fotoSrc}" onerror="this.onerror=null; this.src='${m.foto_url}';" alt="${m.nama}"><p>${namaPendek}</p>`;
+                        containerMembers.appendChild(div);
+                    }
+                });
+            } else {
+                containerMembers.innerHTML = `<p style="text-align:center; color:#aaa; font-style:italic; font-size: 0.9em; width: 100%;">Data foto member belum tersedia.</p>`;
+            }
+        }
+
+        // --- INISIALISASI AWAL ---
         const sekarang = new Date();
         document.getElementById('filter-tahun').value = sekarang.getFullYear();
         document.getElementById('filter-bulan').value = sekarang.getMonth() + 1;
         
         terapkanFilterJadwal();
         muatDaftarMember(); 
+        muatDaftarAlbum(); 
     </script>
 </body>
 </html>
