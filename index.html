@@ -38,7 +38,7 @@
         .card-album img { border-radius: 10px; max-width: 150px; aspect-ratio: 1/1; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 10px; object-fit: cover;}
         .card-album h3 { margin: 0 0 5px 0; font-size: 1.05em; color: #d81b60; }
 
-        /* --- BADGE STATUS MEMBER (Dipakai di Detail Profil) --- */
+        /* --- BADGE STATUS MEMBER --- */
         .status-badge { display: inline-block; padding: 4px 10px; border-radius: 15px; font-size: 0.75em; font-weight: bold; color: white; background-color: #ec407a; margin-top: auto; text-align: center; line-height: 1.2;}
         .status-anggota { background-color: #ec407a; } 
         .status-trainee { background-color: #7e57c2; } 
@@ -73,8 +73,8 @@
         .list-subtitle { font-weight: bold; color: #666; font-size: 0.9em; display: flex; align-items: center; flex-wrap: wrap;}
         .list-title { font-size: 1.2em; color: #d81b60; margin: 5px 0 0 0; font-weight: bold;}
 
-        .badge-tipe-bawa { background-color: #6a1b9a; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; font-weight: bold; margin-right: 5px;}
-        .badge-tipe-lagu { background-color: #00838f; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; font-weight: bold; margin-right: 5px;}
+        .badge-tipe-bawa { background-color: #6a1b9a; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; font-weight: bold; margin-right: 5px; margin-left: 5px;}
+        .badge-tipe-lagu { background-color: #00838f; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; font-weight: bold; margin-right: 5px; margin-left: 5px;}
 
         /* --- TOMBOL KEMBALI & DETAIL --- */
         .btn-back { background-color: #666; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-bottom: 20px; font-weight: bold; transition: 0.2s;}
@@ -85,11 +85,18 @@
         .detail-box p { margin: 10px 0; font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 5px;}
         
         .lyrics-area { background-color: #fff0f5; padding: 25px; border-radius: 10px; margin-top: 20px; font-size: 1.1em; line-height: 1.8; text-align: center; color: #444; font-style: italic;}
+        
+        /* --- LINK SOSMED & LAGU --- */
         .song-links { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: center;}
-        .song-links a { text-decoration: none; padding: 8px 15px; border-radius: 5px; color: white; font-size: 0.9em; font-weight: bold; }
+        .song-links a { text-decoration: none; padding: 8px 15px; border-radius: 5px; color: white; font-size: 0.9em; font-weight: bold; transition: 0.2s; display: flex; align-items: center; gap: 5px;}
+        .song-links a:hover { opacity: 0.8; transform: translateY(-2px); }
+        
         .link-yt { background-color: #ff0000; }
         .link-sp { background-color: #1db954; }
         .link-am { background-color: #fa243c; }
+        .link-x { background-color: #000000; }
+        .link-ig { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
+        .link-tt { background-color: #000000; border: 1px solid #444; }
 
         /* --- CSS KHUSUS ALBUM/LAGU --- */
         .album-members-container { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin-bottom: 15px; max-width: 800px; margin-left: auto; margin-right: auto; transition: max-width 0.3s;}
@@ -98,7 +105,7 @@
         .album-member-small img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #d81b60; margin-bottom: 5px; transition: 0.3s; background-color: #fff;}
         .album-member-small p { font-size: 0.75em; margin: 0; line-height: 1.2; color: #d81b60; font-weight: bold; }
         
-        /* --- CSS DYNAMIC EVENTS (Center, STS, Dll) --- */
+        /* --- CSS DYNAMIC EVENTS --- */
         .icon-single { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 1.5em; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); z-index: 2; }
         .badge-single { position: absolute; top: 54px; left: 50%; transform: translateX(-50%); color: white; font-size: 0.55em; padding: 2px 8px; border-radius: 10px; font-weight: bold; border: 1px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 3; letter-spacing: 0.5px; white-space: nowrap; }
         .icon-dual-left { position: absolute; top: -15px; left: 15%; transform: translateX(-50%); font-size: 1.5em; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); z-index: 2; }
@@ -226,7 +233,7 @@
     </div>
 
     <div class="footer">
-        Made with &hearts; by <b>LFN / @FianHyde</b>
+        Made with &hearts; by <b>LFN</b>
     </div>
 
     <script>
@@ -251,7 +258,7 @@
             window.scrollTo(0, 0); 
         }
 
-        // --- FUNGSI FORMAT STATUS (Untuk Profil Detail) ---
+        // --- FUNGSI FORMAT STATUS ---
         function getFormatStatusMember(status) {
             if (!status) return { kelas: 'status-anggota', teks: 'Anggota' }; 
             const s = status.toLowerCase();
@@ -450,7 +457,7 @@
                         const badgeText = activeEvents.map(e => e.name).join(' &bull; ');
                         floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, ${ev1.color1}, ${ev2.color1});">${badgeText}</div>`;
                         imgStyle = `border: 3px solid transparent; background: linear-gradient(white, white) padding-box, linear-gradient(135deg, ${ev1.color1}, ${ev2.color1}) border-box; box-shadow: 0 0 10px ${ev1.color1}99;`;
-                        h3Style = `color: ${ev1.textColor};`;
+                        h3Style = `color: ${ev.textColor};`;
                     } else {
                          h3Style = `color: ${warnaTema};`;
                     }
@@ -467,9 +474,10 @@
             
             containerSongs.innerHTML = ''; areaSetlist.style.display = 'block'; loadingSongs.style.display = 'block';
 
+            // MENGAMBIL DATA LAGU & DATA CENTER (SUPPORT W-CENTER)
             const { data: dataSongs, error: errSongs } = await supabaseClient
                 .from('schedule_songs')
-                .select('track_number, songs(id, judul_lagu, tipe_lagu, tipe_dibawakan)')
+                .select('track_number, center1:members!center_id(id, nama_panggilan), center2:members!center_id_2(id, nama_panggilan), songs(id, judul_lagu, tipe_lagu, tipe_dibawakan)')
                 .eq('schedule_id', scheduleId)
                 .order('track_number', { ascending: true });
 
@@ -487,11 +495,19 @@
                     const tampilanTrack = item.track_number ? `Track ${item.track_number}` : `Track ${index + 1}`;
                     const badgeTipeLagu = lagu.tipe_lagu ? `<span class="badge-tipe-lagu" style="background-color:${warnaTema};">${lagu.tipe_lagu}</span>` : '';
                     const badgeTipeDibawakan = lagu.tipe_dibawakan ? `<span class="badge-tipe-bawa">${lagu.tipe_dibawakan}</span>` : `<span class="badge-tipe-bawa">All Member</span>`;
+                    
+                    // Center langsung teks berwarna emas, tanpa background badge
+                    let namaCenter = '';
+                    if (item.center1 && item.center1.nama_panggilan) namaCenter += item.center1.nama_panggilan;
+                    if (item.center2 && item.center2.nama_panggilan) namaCenter += ' & ' + item.center2.nama_panggilan;
+                    
+                    const textCenter = namaCenter !== '' ? `<div style="margin-top: 5px; font-weight: bold; font-size: 0.85em; color: #d4af37;">&#128081; ${namaCenter}</div>` : '';
 
                     div.innerHTML = `
                         <div>
-                            <div class="list-subtitle">&#127925; ${tampilanTrack} &bull; ${badgeTipeLagu}${badgeTipeDibawakan}</div>
-                            <h3 class="list-title" style="color:${warnaTema};">${lagu.judul_lagu}</h3>
+                            <div class="list-subtitle" style="margin-bottom: 5px;">&#127925; ${tampilanTrack} ${badgeTipeLagu}${badgeTipeDibawakan}</div>
+                            <h3 class="list-title" style="color:${warnaTema}; margin-top: 2px;">${lagu.judul_lagu}</h3>
+                            ${textCenter}
                         </div>
                         <div style="color: ${warnaTema}; font-size: 24px;">&#10140;</div>
                     `;
@@ -501,7 +517,7 @@
         }
 
         // ==========================================
-        // FITUR 2: MEMBER (DENGAN FLOATING BADGE)
+        // FITUR 2: MEMBER (Depan Bersih)
         // ==========================================
         let dataSemuaMember = []; 
         async function muatDaftarMember() {
@@ -524,14 +540,12 @@
                 const namaPendek = member.nama_panggilan || member.nama.split(' ')[0];
                 const s = (member.status || '').toLowerCase();
                 
-                // Variabel untuk Floating Badge
                 let floatingIcons = ''; 
                 let floatBadge = ''; 
                 let imgStyle = ''; 
                 let h3Style = '';
                 let isFloating = false;
 
-                // Cek Status Khusus
                 if (s.includes('captain')) {
                     floatingIcons = `<div class="icon-single">&#127894;&#65039;</div>`;
                     floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, #d4af37, #b8860b);">CAPTAIN</div>`;
@@ -558,7 +572,6 @@
                     isFloating = true;
                 }
 
-                // Jika tidak memakai floating badge, beri badge kotak biasa di bawah (Trainee/Anggota)
                 let bottomBadgeHtml = '';
                 if (!isFloating) {
                     const infoStatus = getFormatStatusMember(member.status);
@@ -575,28 +588,42 @@
                         <img src="${member.foto_url}" alt="${member.nama}" style="${imgStyle}">
                         ${floatBadge}
                     </div>
-                    <h3 style="margin-top: 5px; ${h3Style}">${namaPendek}</h3>
+                    <h3 style="margin-top: 5px; margin-bottom: 2px; ${h3Style}">${namaPendek}</h3>
                     ${bottomBadgeHtml}
                 `;
                 container.appendChild(card);
             });
         }
 
+        // --- UPDATE TAMPILAN DETAIL PROFIL ---
         function tampilkanDetailMemberDariData(member) {
             bukaHalaman('view-member-detail');
             const container = document.getElementById('info-detail-member');
             const infoStatus = getFormatStatusMember(member.status); 
             
+            let sosmedHtml = '';
+            if (member.twitter || member.instagram || member.tiktok) {
+                sosmedHtml += '<div class="song-links" style="margin-top: 25px;">';
+                if(member.twitter) sosmedHtml += `<a href="${member.twitter}" target="_blank" class="link-x">&#119935; Twitter / X</a>`;
+                if(member.instagram) sosmedHtml += `<a href="${member.instagram}" target="_blank" class="link-ig">&#128247; Instagram</a>`;
+                if(member.tiktok) sosmedHtml += `<a href="${member.tiktok}" target="_blank" class="link-tt">&#119136; TikTok</a>`;
+                sosmedHtml += '</div>';
+            }
+
             container.innerHTML = `
                 <img src="${member.foto_url}" alt="${member.nama}">
                 <h2 style="margin-top:0;">${member.nama_lengkap || member.nama}</h2>
                 <div style="text-align:center; margin-bottom:20px;"><span class="status-badge ${infoStatus.kelas}">${infoStatus.teks}</span></div>
+                
+                <p><strong>Nama Fanbase:</strong> <span style="color:#d81b60; font-weight:bold;">${member.nama_fanbase || '-'}</span></p>
                 <p><strong>Generasi:</strong> ${member.generasi || '<span style="color:#aaa; font-style:italic;">Belum diatur</span>'}</p>
                 <p><strong>Nama Panggilan:</strong> ${member.nama_panggilan || '-'}</p>
                 <p><strong>Tanggal Lahir:</strong> ${member.tanggal_lahir || '-'}</p>
                 <p><strong>Gol. Darah:</strong> ${member.golongan_darah || '-'}</p>
                 <p><strong>Horoskop:</strong> ${member.horoskop || '-'}</p>
                 <p><strong>Tinggi Badan:</strong> ${member.tinggi_badan || '-'}</p>
+                
+                ${sosmedHtml}
             `;
         }
 
@@ -724,7 +751,7 @@
                 div.innerHTML = `
                     <div>
                         <div class="list-subtitle">
-                            &#127925; ${tampilanTrack} &bull; 
+                            &#127925; ${tampilanTrack}  
                             ${badgeTipeLagu}
                             ${badgeTipeDibawakan}
                         </div>
