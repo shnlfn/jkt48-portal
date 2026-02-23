@@ -7,6 +7,8 @@
     
     <link rel="icon" type="image/png" href="favicon.png" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script src="config.js"></script>
 
     <style>
         /* --- CSS DASAR --- */
@@ -248,9 +250,7 @@
 
     <script>
         // --- KONFIGURASI SUPABASE ---
-        // Ganti dengan kredensial Supabase kamu!
-        const SUPABASE_URL = 'https://rwxqcpyckvygxkbmxbun.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'sb_publishable_49vkEEomI33CyOPTDpGb4w_Tpmx_ADJ'; 
+        // Supabase Client kini mengambil data dari config.js
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // --- SISTEM NAVIGASI ---
@@ -300,18 +300,14 @@
             const judul = judulShowOrAlbum.toLowerCase().trim();
             const namaFormatTeks = namaMember.toLowerCase().trim().replace(/\s+/g, '_');
 
-            // 1. Aturan DInamis Khusus Single (Standar format: .png transparan)
             if (tipeAlbum === 'Single' && nomorSingle) {
-                return `images/single/${nomorSingle}/${namaFormatTeks}.jpg`;
+                return `images/single/${nomorSingle}/${namaFormatTeks}.png`;
             }
             
-            // 2. Aturan Manual Khusus Album / Setlist 
-            // (Saat ini baru Pertaruhan Cinta yang punya foto konsep khusus dengan format .jpg)
             if (judul.includes('pertaruhan cinta')) {
                 return `images/setlist/pertaruhan_cinta/${namaFormatTeks}.jpg`;
             }
             
-            // Jika tidak memenuhi aturan di atas, gunakan foto profil bawaan dari database
             return fotoAsli;
         }
 
@@ -463,10 +459,8 @@
             else if (data.length === 0) container.innerHTML = `<p style="text-align:center; color:#999; width:100%;">Member yang tampil belum diumumkan.</p>`;
             else {
 
-                // --- [PERBAIKAN ANTI-CRASH] LOGIKA SORTING KHUSUS EVENT & RAMADAN ---
                 if (tipeJadwal.toLowerCase().includes('ramadan') || tipeJadwal === 'Event') {
                     data.sort((a, b) => {
-                        // Perlindungan jika ada data member yang terhapus dari database master
                         if (!a.members) return 1;
                         if (!b.members) return -1;
 
@@ -476,35 +470,29 @@
                         const isTraineeA = statusA.includes('trainee') ? 1 : 0;
                         const isTraineeB = statusB.includes('trainee') ? 1 : 0;
 
-                        // 1. Sortir: Anggota (0) di atas Trainee (1)
                         if (isTraineeA !== isTraineeB) {
                             return isTraineeA - isTraineeB;
                         }
                         
-                        // 2. Jika sama-sama Trainee, urutkan berdasarkan Generasi (13 di atas 14)
                         if (isTraineeA === 1 && isTraineeB === 1) {
-                            // Menggunakan Number() karena datanya berupa angka murni
                             const genA = Number(a.members.generasi) || 999;
                             const genB = Number(b.members.generasi) || 999;
                             
                             if (genA !== genB) {
-                                return genA - genB; // Ascending: angka kecil di atas
+                                return genA - genB; 
                             }
                         }
 
-                        // 3. Terakhir, sortir Abjad (A-Z) berdasarkan "nama" asli
                         const namaA = a.members.nama || '';
                         const namaB = b.members.nama || '';
                         return namaA.localeCompare(namaB);
                     });
                 }
-                // -----------------------------------------------------------------
 
                 if (data.length === 12) container.style.maxWidth = '750px';
                 else container.style.maxWidth = '1000px'; 
 
                 data.forEach(item => {
-                    // Perlindungan: Lompati jika member_id tidak ditemukan di tabel members
                     if (!item.members) return; 
                     
                     const member = item.members;
@@ -557,12 +545,10 @@
                 .order('track_number', { ascending: true });
 
             loadingSongs.style.display = 'none';
-            // Menyembunyikan otomatis jika tidak ada lagu terdaftar
             if (errSongs || !dataSongs || dataSongs.length === 0) {
                 areaSetlist.style.display = 'none'; 
             } else {
                 dataSongs.forEach((item, index) => {
-                    // Perlindungan: lompati jika referensi lagu terhapus
                     if (!item.songs) return; 
 
                     const lagu = item.songs;
@@ -574,7 +560,6 @@
                     const tampilanTrack = item.track_number ? `Track ${item.track_number}` : `Track ${index + 1}`;
                     const badgeTipeLagu = lagu.tipe_lagu ? `<span class="badge-tipe-lagu" style="background-color:${warnaTema};">${lagu.tipe_lagu}</span>` : '';
                     
-                    // Prioritas: dibawakan_oleh (event) > tipe_dibawakan (master) > All Member
                     const teksDibawakan = item.dibawakan_oleh ? item.dibawakan_oleh : (lagu.tipe_dibawakan ? lagu.tipe_dibawakan : 'All Member');
                     const badgeTipeDibawakan = `<span class="badge-tipe-bawa">${teksDibawakan}</span>`;
                     
@@ -625,39 +610,45 @@
                 let floatBadge = ''; 
                 let imgStyle = ''; 
                 let h3Style = '';
-                let isFloating = false;
 
+                // CEK LENCANA SPESIAL MELAYANG (TOP)
                 if (s.includes('captain')) {
                     floatingIcons = `<div class="icon-single">&#127894;&#65039;</div>`;
                     floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, #d4af37, #b8860b);">CAPTAIN</div>`;
                     imgStyle = `border: 3px solid #d4af37; box-shadow: 0 0 10px rgba(212, 175, 55, 0.6);`;
                     h3Style = `color: #b8860b;`;
-                    isFloating = true;
                 } else if (s.includes('announced')) {
                     floatingIcons = `<div class="icon-single">&#128226;</div>`;
                     floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, #ad8a9e, #8a667b);">ANNOUNCED</div>`;
                     imgStyle = `border: 3px solid #ad8a9e; box-shadow: 0 0 10px rgba(173, 138, 158, 0.6);`;
                     h3Style = `color: #ad8a9e;`;
-                    isFloating = true;
                 } else if (s.includes('hiatus')) {
                     floatingIcons = `<div class="icon-single">&#9208;&#65039;</div>`;
                     floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, #ff9800, #e65100);">HIATUS</div>`;
                     imgStyle = `border: 3px solid #ff9800; box-shadow: 0 0 10px rgba(255, 152, 0, 0.6);`;
                     h3Style = `color: #e65100;`;
-                    isFloating = true;
                 } else if (s.includes('suspended')) {
                     floatingIcons = `<div class="icon-single">&#128683;</div>`;
                     floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, #333333, #000000);">SUSPENDED</div>`;
                     imgStyle = `border: 3px solid #333333; box-shadow: 0 0 10px rgba(51, 51, 51, 0.6);`;
                     h3Style = `color: #333333;`;
-                    isFloating = true;
                 }
 
-                let bottomBadgeHtml = '';
-                if (!isFloating) {
-                    const infoStatus = getFormatStatusMember(member.status);
-                    bottomBadgeHtml = `<div style="margin-top:auto; width:100%;"><span class="status-badge ${infoStatus.kelas}">${infoStatus.teks}</span></div>`;
+                // CEK LENCANA DASAR TIM (BOTTOM) - Akan selalu muncul
+                const infoStatus = getFormatStatusMember(member.status);
+                let displayTeks = infoStatus.teks;
+                let badgeClass = infoStatus.kelas;
+
+                // Jika punya nama Tim (misal JKT48) dan BUKAN Trainee
+                if (member.team && !s.includes('trainee')) {
+                    displayTeks = member.team;
+                    badgeClass = 'status-anggota'; // Warna pink standar
+                } else if (s.includes('trainee')) {
+                    displayTeks = 'Trainee';
+                    badgeClass = 'status-trainee'; // Warna ungu standar
                 }
+
+                let bottomBadgeHtml = `<div style="margin-top:auto; width:100%;"><span class="status-badge ${badgeClass}">${displayTeks}</span></div>`;
                 
                 const card = document.createElement('div');
                 card.className = 'card-member-mini';
@@ -676,6 +667,74 @@
             });
         }
 
+        async function muatJadwalMember(memberId) {
+            const container = document.getElementById('list-member-schedule');
+            const loading = document.getElementById('loading-member-schedule');
+            
+            const now = new Date().toISOString();
+
+            const { data, error } = await supabaseClient
+                .from('performing_members')
+                .select(`
+                    theater_schedules!inner (
+                        id, judul_show, tanggal_waktu, tipe_jadwal, lokasi, foto_event
+                    )
+                `)
+                .eq('member_id', memberId)
+                .gte('theater_schedules.tanggal_waktu', now);
+
+            loading.style.display = 'none';
+
+            if (error) {
+                container.innerHTML = `<p style="color:red; text-align:center;">Gagal memuat jadwal.</p>`;
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `<p style="text-align:center; color:#999; font-style:italic; font-size: 0.9em;">Belum ada jadwal terdekat untuk member ini.</p>`;
+                return;
+            }
+
+            let schedules = data.map(item => item.theater_schedules);
+            schedules.sort((a, b) => new Date(a.tanggal_waktu) - new Date(b.tanggal_waktu));
+
+            schedules.forEach(jadwal => {
+                const tgl = new Date(jadwal.tanggal_waktu);
+                const formatWaktu = tgl.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute:'2-digit' }) + ' WIB';
+
+                const tipeJadwal = jadwal.tipe_jadwal || 'Theater';
+                let classBadgeTipe = 'tipe-theater';
+                let warnaTeksJudul = '#d81b60'; 
+
+                if (tipeJadwal !== 'Theater') {
+                    classBadgeTipe = 'tipe-event';
+                    warnaTeksJudul = '#004080'; 
+                    if (tipeJadwal.toLowerCase().includes('ramadhan') || tipeJadwal.toLowerCase().includes('ramadan')) {
+                        classBadgeTipe = 'tipe-ramadan';
+                        warnaTeksJudul = '#28a745'; 
+                    }
+                }
+
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.style.borderLeftColor = warnaTeksJudul; 
+                div.style.padding = '15px'; 
+                div.onclick = () => muatDetailJadwal(jadwal.id, jadwal.judul_show, formatWaktu, jadwal.lokasi, tipeJadwal, jadwal.foto_event);
+                
+                div.innerHTML = `
+                    <div>
+                        <div class="list-subtitle" style="font-size: 0.85em;">
+                            <span class="badge-tipe-jadwal ${classBadgeTipe}" style="font-size: 0.9em; padding: 2px 8px;">${tipeJadwal.toUpperCase()}</span>
+                            ${formatWaktu}
+                        </div>
+                        <h3 class="list-title" style="color: ${warnaTeksJudul}; font-size: 1.1em; margin-top: 5px;">${jadwal.judul_show}</h3>
+                    </div>
+                    <div style="color: ${warnaTeksJudul}; font-size: 20px;">&#10140;</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
         function tampilkanDetailMemberDariData(member) {
             bukaHalaman('view-member-detail');
             const container = document.getElementById('info-detail-member');
@@ -690,13 +749,24 @@
                 sosmedHtml += '</div>';
             }
 
+            let badgesHtml = `<span class="status-badge ${infoStatus.kelas}">${infoStatus.teks}</span>`;
+            if (member.team) {
+                badgesHtml += `<span class="status-badge" style="background-color: #d81b60;">Team ${member.team}</span>`;
+            }
+            if (member.generasi) {
+                const angkaGen = String(member.generasi).replace(/\D/g, ''); 
+                badgesHtml += `<span class="status-badge" style="background-color: #9c27b0;">Gen ${angkaGen}</span>`;
+            }
+
             container.innerHTML = `
                 <img src="${member.foto_url}" alt="${member.nama}">
-                <h2 style="margin-top:0;">${member.nama_lengkap || member.nama}</h2>
-                <div style="text-align:center; margin-bottom:20px;"><span class="status-badge ${infoStatus.kelas}">${infoStatus.teks}</span></div>
+                <h2 style="margin-top:0; margin-bottom: 8px;">${member.nama_lengkap || member.nama}</h2>
+                
+                <div style="text-align:center; margin-bottom:25px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
+                    ${badgesHtml}
+                </div>
                 
                 <p><strong>Nama Fanbase:</strong> <span style="color:#d81b60; font-weight:bold;">${member.nama_fanbase || '-'}</span></p>
-                <p><strong>Generasi:</strong> ${member.generasi || '<span style="color:#aaa; font-style:italic;">Belum diatur</span>'}</p>
                 <p><strong>Nama Panggilan:</strong> ${member.nama_panggilan || '-'}</p>
                 <p><strong>Tanggal Lahir:</strong> ${member.tanggal_lahir || '-'}</p>
                 <p><strong>Gol. Darah:</strong> ${member.golongan_darah || '-'}</p>
@@ -704,7 +774,16 @@
                 <p><strong>Tinggi Badan:</strong> ${member.tinggi_badan || '-'}</p>
                 
                 ${sosmedHtml}
+
+                <div style="margin-top: 45px; margin-bottom: 10px;">
+                    <hr style="border: 0; height: 1px; background: #ddd; margin: 0 auto 20px auto;">
+                    <h3 style="text-align:center; color:#d81b60; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px; font-size: 1em;">Jadwal Mendatang</h3>
+                    <div id="loading-member-schedule" style="text-align: center; font-size: 0.85em; color:#666;">Memuat jadwal...</div>
+                    <div class="list-container" id="list-member-schedule"></div>
+                </div>
             `;
+
+            muatJadwalMember(member.id);
         }
 
         async function muatDetailMemberById(memberId) {
