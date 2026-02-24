@@ -87,23 +87,40 @@
         .btn-back { background-color: #666; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-bottom: 20px; font-weight: bold; transition: 0.2s;}
         .btn-back:hover { background-color: #444; }
         
-        .detail-box { background: white; padding: 30px; border-radius: 15px; max-width: 700px; margin: 0 auto; text-align: left; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .detail-box img { width: 200px; height: 200px; border-radius: 15px; object-fit: cover; display: block; margin: 0 auto 20px auto; }
+        .detail-box { background: white; padding: 30px; border-radius: 15px; max-width: 800px; margin: 0 auto; text-align: left; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .detail-box img.foto-profil { width: 200px; height: 200px; border-radius: 15px; object-fit: cover; display: block; margin: 0 auto 20px auto; }
         .detail-box p { margin: 10px 0; font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 5px;}
         
         .lyrics-area { background-color: #fff0f5; padding: 25px; border-radius: 10px; margin-top: 20px; font-size: 1.1em; line-height: 1.8; text-align: center; color: #444; font-style: italic;}
         
-        /* --- LINK SOSMED --- */
+        /* --- LINK SOSMED TOMBOL PANJANG (KHUSUS LAGU / PLATFORM MUSIK) --- */
         .song-links { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: center;}
         .song-links a { text-decoration: none; padding: 8px 15px; border-radius: 5px; color: white; font-size: 0.9em; font-weight: bold; transition: 0.2s; display: flex; align-items: center; gap: 5px;}
         .song-links a:hover { opacity: 0.8; transform: translateY(-2px); }
-        
         .link-yt { background-color: #ff0000; }
         .link-sp { background-color: #1db954; }
         .link-am { background-color: #fa243c; }
-        .link-x { background-color: #000000; }
-        .link-ig { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
-        .link-tt { background-color: #000000; border: 1px solid #444; }
+
+        /* --- ICON SOSIAL MEDIA "KOTAK BAGUS" (MEMBER & FANBASE) --- */
+        .icon-social { 
+            display: inline-flex; align-items: center; justify-content: center; 
+            width: 38px; height: 38px; 
+            border-radius: 10px; 
+            text-decoration: none; 
+            transition: transform 0.2s, box-shadow 0.2s; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        }
+        .icon-social:hover { transform: translateY(-3px); box-shadow: 0 4px 8px rgba(0,0,0,0.25); }
+        .icon-social img { width: 22px; height: 22px; display: block; filter: invert(1); } 
+        
+        .icon-social.small { width: 26px; height: 26px; border-radius: 6px; margin-left: 6px; box-shadow: none; vertical-align: middle;}
+        .icon-social.small img { width: 14px; height: 14px; }
+        
+        .bg-x { background-color: #000; }
+        .bg-ig { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+        .bg-tt { background-color: #000; border: 1px solid #444; }
+        .bg-linktree { background-color: #43E660; }
+        .bg-linktree img { filter: invert(0); } 
 
         /* --- CSS KHUSUS ALBUM/LAGU --- */
         .album-members-container { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin-bottom: 15px; max-width: 800px; margin-left: auto; margin-right: auto; transition: max-width 0.3s;}
@@ -112,6 +129,13 @@
         .album-member-small img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #d81b60; margin-bottom: 5px; transition: 0.3s; background-color: #fff;}
         .album-member-small p { font-size: 0.75em; margin: 0; line-height: 1.2; color: #d81b60; font-weight: bold; }
         
+        /* --- CSS GRID KHUSUS SENBATSU PARTICIPATION --- */
+        .grid-senbatsu-mini { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; max-width: 800px; margin: 0 auto; }
+        .card-senbatsu-mini { width: 90px; text-align: center; cursor: pointer; transition: transform 0.2s; }
+        .card-senbatsu-mini:hover { transform: translateY(-4px); }
+        .card-senbatsu-mini img { width: 90px; height: 90px; border-radius: 10px; object-fit: cover; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 6px; }
+        .card-senbatsu-mini p { font-size: 0.7em; font-weight: bold; color: #d81b60; margin: 0; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
         /* --- CSS DYNAMIC EVENTS (Center, STS, Dll) --- */
         .icon-single { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 1.5em; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); z-index: 2; }
         .badge-single { position: absolute; top: 54px; left: 50%; transform: translateX(-50%); color: white; font-size: 0.55em; padding: 2px 8px; border-radius: 10px; font-weight: bold; border: 1px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 3; letter-spacing: 0.5px; white-space: nowrap; }
@@ -218,7 +242,7 @@
 
         <div id="view-album-detail" class="view-section">
             <img id="detail-header-single" src="" alt="Header Single" style="width: 100%; max-width: 800px; height: 250px; border-radius: 15px; object-fit: cover; display: none; margin: 0 auto 20px auto; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
-            <img id="detail-cover-album" src="" alt="Cover Album" style="width: 200px; height: 200px; border-radius: 15px; object-fit: cover; display: block; margin: 0 auto 15px auto; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+            <img id="detail-cover-album" src="" alt="Cover Album" style="width: 200px; height: 200px; border-radius: 15px; object-fit: cover; display: block; margin: 0 auto 15px auto; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" onerror="this.onerror=null; this.src='https://jkt48.com/images/logo.svg'; this.style.backgroundColor='#d81b60';">
             
             <h2 id="detail-judul-album" style="margin-top: 0;">Judul Album</h2>
             
@@ -250,7 +274,6 @@
 
     <script>
         // --- KONFIGURASI SUPABASE ---
-        // Supabase Client kini mengambil data dari config.js
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // --- SISTEM NAVIGASI ---
@@ -458,29 +481,22 @@
             if (error) container.innerHTML = `<p style="color:red;">Gagal memuat member: ${error.message}</p>`;
             else if (data.length === 0) container.innerHTML = `<p style="text-align:center; color:#999; width:100%;">Member yang tampil belum diumumkan.</p>`;
             else {
+                let validMembersData = data.filter(item => item && item.members);
 
                 if (tipeJadwal.toLowerCase().includes('ramadan') || tipeJadwal === 'Event') {
-                    data.sort((a, b) => {
-                        if (!a.members) return 1;
-                        if (!b.members) return -1;
-
+                    validMembersData.sort((a, b) => {
                         const statusA = (a.members.status || 'Anggota').toLowerCase();
                         const statusB = (b.members.status || 'Anggota').toLowerCase();
                         
                         const isTraineeA = statusA.includes('trainee') ? 1 : 0;
                         const isTraineeB = statusB.includes('trainee') ? 1 : 0;
 
-                        if (isTraineeA !== isTraineeB) {
-                            return isTraineeA - isTraineeB;
-                        }
+                        if (isTraineeA !== isTraineeB) return isTraineeA - isTraineeB;
                         
                         if (isTraineeA === 1 && isTraineeB === 1) {
                             const genA = Number(a.members.generasi) || 999;
                             const genB = Number(b.members.generasi) || 999;
-                            
-                            if (genA !== genB) {
-                                return genA - genB; 
-                            }
+                            if (genA !== genB) return genA - genB; 
                         }
 
                         const namaA = a.members.nama || '';
@@ -489,12 +505,10 @@
                     });
                 }
 
-                if (data.length === 12) container.style.maxWidth = '750px';
+                if (validMembersData.length === 12) container.style.maxWidth = '650px';
                 else container.style.maxWidth = '1000px'; 
 
-                data.forEach(item => {
-                    if (!item.members) return; 
-                    
+                validMembersData.forEach(item => {
                     const member = item.members;
                     const namaPendek = member.nama_panggilan || member.nama.split(' ')[0];
                     const card = document.createElement('div');
@@ -527,7 +541,8 @@
                     }
 
                     const fotoSrc = dapatkanURLFotoCustom(member.nama, judul, member.foto_url, undefined, undefined);
-                    card.innerHTML = `<div style="position:relative; width:100%; display:flex; justify-content:center;">${floatingIcons}<img src="${fotoSrc}" onerror="this.onerror=null; this.src='${member.foto_url}';" alt="${member.nama}" style="${imgStyle}">${floatBadge}</div><h3 style="margin-top: 5px; ${h3Style}">${namaPendek}</h3>`;
+                    
+                    card.innerHTML = `<div style="position:relative; width:100%; display:flex; justify-content:center;">${floatingIcons}<img src="${fotoSrc}" onerror="if(!this.hasAttribute('data-tried')){ this.setAttribute('data-tried', '1'); this.src='${member.foto_url}'; } else { this.onerror=null; this.src='https://jkt48.com/images/logo.svg'; this.style.backgroundColor='#d81b60'; }" alt="${member.nama}" style="${imgStyle}">${floatBadge}</div><h3 style="margin-top: 5px; ${h3Style}">${namaPendek}</h3>`;
                     container.appendChild(card);
                 });
             }
@@ -611,7 +626,6 @@
                 let imgStyle = ''; 
                 let h3Style = '';
 
-                // CEK LENCANA SPESIAL MELAYANG (TOP)
                 if (s.includes('captain')) {
                     floatingIcons = `<div class="icon-single">&#127894;&#65039;</div>`;
                     floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, #d4af37, #b8860b);">CAPTAIN</div>`;
@@ -634,18 +648,16 @@
                     h3Style = `color: #333333;`;
                 }
 
-                // CEK LENCANA DASAR TIM (BOTTOM) - Akan selalu muncul
                 const infoStatus = getFormatStatusMember(member.status);
                 let displayTeks = infoStatus.teks;
                 let badgeClass = infoStatus.kelas;
 
-                // Jika punya nama Tim (misal JKT48) dan BUKAN Trainee
                 if (member.team && !s.includes('trainee')) {
                     displayTeks = member.team;
-                    badgeClass = 'status-anggota'; // Warna pink standar
+                    badgeClass = 'status-anggota'; 
                 } else if (s.includes('trainee')) {
                     displayTeks = 'Trainee';
-                    badgeClass = 'status-trainee'; // Warna ungu standar
+                    badgeClass = 'status-trainee'; 
                 }
 
                 let bottomBadgeHtml = `<div style="margin-top:auto; width:100%;"><span class="status-badge ${badgeClass}">${displayTeks}</span></div>`;
@@ -657,7 +669,7 @@
                 card.innerHTML = `
                     <div style="position:relative; width:100%; display:flex; justify-content:center;">
                         ${floatingIcons}
-                        <img src="${member.foto_url}" alt="${member.nama}" style="${imgStyle}">
+                        <img src="${member.foto_url}" onerror="this.onerror=null; this.src='https://jkt48.com/images/logo.svg'; this.style.backgroundColor='#d81b60';" alt="${member.nama}" style="${imgStyle}">
                         ${floatBadge}
                     </div>
                     <h3 style="margin-top: 5px; margin-bottom: 2px; ${h3Style}">${namaPendek}</h3>
@@ -735,23 +747,75 @@
             });
         }
 
+        async function muatSenbatsuMember(memberId) {
+            const container = document.getElementById('list-member-senbatsu');
+            const loading = document.getElementById('loading-member-senbatsu');
+            
+            const { data, error } = await supabaseClient
+                .from('album_performing_members')
+                .select(`is_center, albums ( id, judul_album, cover_url, tipe_album, nomor_single, tanggal_rilis )`)
+                .eq('member_id', memberId);
+
+            loading.style.display = 'none';
+
+            if (error) {
+                container.innerHTML = `<p style="color:red; text-align:center;">Gagal memuat data partisipasi.</p>`;
+                return;
+            }
+
+            let validAlbums = data.filter(item => item && item.albums).map(item => ({...item.albums, is_center: item.is_center}));
+            validAlbums.sort((a, b) => new Date(b.tanggal_rilis) - new Date(a.tanggal_rilis));
+
+            if (validAlbums.length === 0) {
+                container.innerHTML = `<p style="text-align:center; color:#999; font-style:italic; font-size: 0.9em;">Belum ada data partisipasi senbatsu/setlist.</p>`;
+                return;
+            }
+
+            validAlbums.forEach(album => {
+                const div = document.createElement('div');
+                div.className = 'card-senbatsu-mini';
+                div.onclick = () => muatDaftarLaguDiAlbum(album.id, album.judul_album, album.cover_url, album.tipe_album, album.nomor_single);
+                
+                const crown = album.is_center ? `<div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); font-size:1.5em; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5)); z-index:2;">&#128081;</div>` : '';
+                const coverUrl = album.cover_url || 'https://jkt48.com/images/logo.svg';
+
+                div.innerHTML = `
+                    <div style="position:relative; display:inline-block;">
+                        ${crown}
+                        <img src="${coverUrl}" onerror="this.onerror=null; this.src='https://jkt48.com/images/logo.svg'; this.style.backgroundColor='#d81b60';" alt="${album.judul_album}">
+                    </div>
+                    <p title="${album.judul_album}">${album.judul_album}</p>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+
         function tampilkanDetailMemberDariData(member) {
             bukaHalaman('view-member-detail');
             const container = document.getElementById('info-detail-member');
             const infoStatus = getFormatStatusMember(member.status); 
             
-            let sosmedHtml = '';
+            let memberSosmedHtml = '';
             if (member.twitter || member.instagram || member.tiktok) {
-                sosmedHtml += '<div class="song-links" style="margin-top: 25px;">';
-                if(member.twitter) sosmedHtml += `<a href="${member.twitter}" target="_blank" class="link-x">&#119935; Twitter / X</a>`;
-                if(member.instagram) sosmedHtml += `<a href="${member.instagram}" target="_blank" class="link-ig">&#128247; Instagram</a>`;
-                if(member.tiktok) sosmedHtml += `<a href="${member.tiktok}" target="_blank" class="link-tt">&#119136; TikTok</a>`;
-                sosmedHtml += '</div>';
+                memberSosmedHtml += `<div style="display:flex; gap:12px; justify-content:center; margin-bottom: 25px;">`;
+                if(member.twitter) memberSosmedHtml += `<a href="${member.twitter}" target="_blank" class="icon-social bg-x" title="X / Twitter"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/x.svg" alt="X"></a>`;
+                if(member.instagram) memberSosmedHtml += `<a href="${member.instagram}" target="_blank" class="icon-social bg-ig" title="Instagram"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/instagram.svg" alt="IG"></a>`;
+                if(member.tiktok) memberSosmedHtml += `<a href="${member.tiktok}" target="_blank" class="icon-social bg-tt" title="TikTok"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/tiktok.svg" alt="TikTok"></a>`;
+                memberSosmedHtml += `</div>`;
+            }
+
+            let fanbaseSosmedHtml = '';
+            if (member.fanbase_twitter || member.fanbase_instagram || member.fanbase_tiktok || member.fanbase_linktree) {
+                if(member.fanbase_twitter) fanbaseSosmedHtml += `<a href="${member.fanbase_twitter}" target="_blank" class="icon-social small bg-x" title="Fanbase Twitter / X"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/x.svg" alt="X"></a>`;
+                if(member.fanbase_instagram) fanbaseSosmedHtml += `<a href="${member.fanbase_instagram}" target="_blank" class="icon-social small bg-ig" title="Fanbase Instagram"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/instagram.svg" alt="IG"></a>`;
+                if(member.fanbase_tiktok) fanbaseSosmedHtml += `<a href="${member.fanbase_tiktok}" target="_blank" class="icon-social small bg-tt" title="Fanbase TikTok"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/tiktok.svg" alt="TikTok"></a>`;
+                if(member.fanbase_linktree) fanbaseSosmedHtml += `<a href="${member.fanbase_linktree}" target="_blank" class="icon-social small bg-linktree" title="Fanbase Linktree"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/linktree.svg" alt="Linktree"></a>`;
             }
 
             let badgesHtml = `<span class="status-badge ${infoStatus.kelas}">${infoStatus.teks}</span>`;
             if (member.team) {
-                badgesHtml += `<span class="status-badge" style="background-color: #d81b60;">Team ${member.team}</span>`;
+                badgesHtml += `<span class="status-badge" style="background-color: #d81b60;">${member.team}</span>`;
             }
             if (member.generasi) {
                 const angkaGen = String(member.generasi).replace(/\D/g, ''); 
@@ -759,31 +823,44 @@
             }
 
             container.innerHTML = `
-                <img src="${member.foto_url}" alt="${member.nama}">
+                <img src="${member.foto_url}" onerror="this.onerror=null; this.src='https://jkt48.com/images/logo.svg'; this.style.backgroundColor='#d81b60';" class="foto-profil" alt="${member.nama}">
                 <h2 style="margin-top:0; margin-bottom: 8px;">${member.nama_lengkap || member.nama}</h2>
                 
-                <div style="text-align:center; margin-bottom:25px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
+                <div style="text-align:center; margin-bottom:15px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
                     ${badgesHtml}
                 </div>
                 
-                <p><strong>Nama Fanbase:</strong> <span style="color:#d81b60; font-weight:bold;">${member.nama_fanbase || '-'}</span></p>
+                ${memberSosmedHtml}
+                
+                <div style="display:flex; align-items:center; flex-wrap:wrap; border-bottom: 1px solid #eee; padding-bottom: 5px; margin: 10px 0;">
+                    <strong style="margin-right: 5px;">Nama Fanbase:</strong> 
+                    <span style="color:#d81b60; font-weight:bold; margin-right: 5px;">${member.nama_fanbase || '-'}</span>
+                    ${fanbaseSosmedHtml}
+                </div>
+                
                 <p><strong>Nama Panggilan:</strong> ${member.nama_panggilan || '-'}</p>
                 <p><strong>Tanggal Lahir:</strong> ${member.tanggal_lahir || '-'}</p>
                 <p><strong>Gol. Darah:</strong> ${member.golongan_darah || '-'}</p>
                 <p><strong>Horoskop:</strong> ${member.horoskop || '-'}</p>
                 <p><strong>Tinggi Badan:</strong> ${member.tinggi_badan || '-'}</p>
                 
-                ${sosmedHtml}
-
                 <div style="margin-top: 45px; margin-bottom: 10px;">
                     <hr style="border: 0; height: 1px; background: #ddd; margin: 0 auto 20px auto;">
                     <h3 style="text-align:center; color:#d81b60; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px; font-size: 1em;">Jadwal Mendatang</h3>
                     <div id="loading-member-schedule" style="text-align: center; font-size: 0.85em; color:#666;">Memuat jadwal...</div>
                     <div class="list-container" id="list-member-schedule"></div>
                 </div>
+
+                <div style="margin-top: 45px; margin-bottom: 20px;">
+                    <hr style="border: 0; height: 1px; background: #ddd; margin: 0 auto 20px auto;">
+                    <h3 style="text-align:center; color:#d81b60; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px; font-size: 1em;">Senbatsu Participation</h3>
+                    <div id="loading-member-senbatsu" style="text-align: center; font-size: 0.85em; color:#666;">Memuat partisipasi...</div>
+                    <div class="grid-senbatsu-mini" id="list-member-senbatsu"></div>
+                </div>
             `;
 
             muatJadwalMember(member.id);
+            muatSenbatsuMember(member.id);
         }
 
         async function muatDetailMemberById(memberId) {
@@ -847,7 +924,7 @@
                 card.onclick = () => muatDaftarLaguDiAlbum(album.id, album.judul_album, cover, album.tipe_album, album.nomor_single);
                 
                 card.innerHTML = `
-                    <img src="${cover}" alt="${album.judul_album}">
+                    <img src="${cover}" onerror="this.onerror=null; this.src='https://jkt48.com/images/logo.svg'; this.style.backgroundColor='#d81b60';" alt="${album.judul_album}">
                     <h3 style="margin-bottom: 2px;">${album.judul_album}</h3>
                     <div class="album-date">${tanggalRilisFormat}</div>
                     <div class="album-badges">
@@ -898,17 +975,18 @@
 
             loadingMembers.style.display = 'none';
 
-            if (dataMembers && dataMembers.length === 12) {
-                containerMembers.style.maxWidth = '550px'; 
-            } else {
-                containerMembers.style.maxWidth = '800px'; 
-            }
-
             if (!errMembers && dataMembers && dataMembers.length > 0) {
+                let validDataMembers = dataMembers.filter(item => item && item.members);
+
+                if (validDataMembers.length === 12) {
+                    containerMembers.style.maxWidth = '550px'; 
+                } else {
+                    containerMembers.style.maxWidth = '800px'; 
+                }
+
                 garisPemisah.style.display = 'block'; 
                 
-                dataMembers.forEach(item => {
-                    if (!item.members) return; // Perlindungan
+                validDataMembers.forEach(item => {
                     const m = item.members;
                     const div = document.createElement('div');
                     div.className = item.is_center ? 'album-member-small is-center' : 'album-member-small';
@@ -919,7 +997,7 @@
 
                     const fotoSrc = dapatkanURLFotoCustom(m.nama, judulAlbum, m.foto_url, tipeAlbum, nomorSingle);
 
-                    div.innerHTML = `${crownHtml}<img src="${fotoSrc}" onerror="this.onerror=null; this.src='${m.foto_url}';" alt="${m.nama}"><p>${namaPendek}</p>`;
+                    div.innerHTML = `${crownHtml}<img src="${fotoSrc}" onerror="if(!this.hasAttribute('data-tried')){ this.setAttribute('data-tried', '1'); this.src='${m.foto_url}'; } else { this.onerror=null; this.src='https://jkt48.com/images/logo.svg'; this.style.backgroundColor='#d81b60'; }" alt="${m.nama}"><p>${namaPendek}</p>`;
                     containerMembers.appendChild(div);
                 });
             }
@@ -1040,15 +1118,16 @@
 
             loadingMembers.style.display = 'none';
 
-            if (finalMembersToRender && finalMembersToRender.length === 12) {
+            let validFinalMembers = finalMembersToRender ? finalMembersToRender.filter(item => item && item.members) : [];
+
+            if (validFinalMembers.length === 12) {
                 containerMembers.style.maxWidth = '550px'; 
             } else {
                 containerMembers.style.maxWidth = '800px'; 
             }
 
-            if (finalMembersToRender && finalMembersToRender.length > 0) {
-                finalMembersToRender.forEach(item => {
-                    if (!item.members) return; // Perlindungan
+            if (validFinalMembers.length > 0) {
+                validFinalMembers.forEach(item => {
                     const m = item.members;
                     const isCenterUI = item.is_center && tipeDibawakanText !== 'All Member';
                     const div = document.createElement('div');
@@ -1060,7 +1139,7 @@
 
                     const fotoSrc = dapatkanURLFotoCustom(m.nama, judulAlbumLagu, m.foto_url, tipeAlbumLagu, nomorSingleLagu);
 
-                    div.innerHTML = `${crownHtml}<img src="${fotoSrc}" onerror="this.onerror=null; this.src='${m.foto_url}';" alt="${m.nama}"><p>${namaPendek}</p>`;
+                    div.innerHTML = `${crownHtml}<img src="${fotoSrc}" onerror="if(!this.hasAttribute('data-tried')){ this.setAttribute('data-tried', '1'); this.src='${m.foto_url}'; } else { this.onerror=null; this.src='https://jkt48.com/images/logo.svg'; this.style.backgroundColor='#d81b60'; }" alt="${m.nama}"><p>${namaPendek}</p>`;
                     containerMembers.appendChild(div);
                 });
             } else {
