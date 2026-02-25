@@ -63,7 +63,11 @@
         .badge-tipe-jadwal { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.8em; font-weight: bold; color: white; margin-right: 8px;}
         .tipe-theater { background-color: #d81b60; }
         .tipe-event { background-color: #004080; } 
-        .tipe-ramadan { background-color: #28a745; } 
+        
+        /* WARNA SPESIFIK TIPE SEKUNDER */
+        .tipe-ramadan { background-color: #28a745; } /* Hijau */
+        .tipe-ofc { background-color: #d4af37; color: #000; } /* Emas / Gold */
+        .tipe-offair { background-color: #004080; } /* Biru */
 
         /* --- DESAIN MINI UNTUK MEMBER --- */
         .grid-members-mini { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; max-width: 1000px; margin: 0 auto; transition: max-width 0.3s; }
@@ -161,7 +165,7 @@
 
     <div class="container">
         <div id="view-schedule" class="view-section active">
-            <h2>Jadwal & Event JKT48</h2>
+            <h2>Jadwal & Event</h2>
             <div class="filter-box">
                 <select id="filter-bulan">
                     <option value="1">Januari</option> <option value="2">Februari</option> <option value="3">Maret</option>
@@ -213,9 +217,14 @@
         </div>
 
         <div id="view-member" class="view-section">
-            <h2>Ensiklopedia Member JKT48</h2>
+            <h2>Ensiklopedia Member</h2>
             <div id="loading-member" style="text-align: center;">Memuat member...</div>
-            <div class="grid-members-mini" id="list-member"></div>
+            
+            <h3 id="title-anggota" style="text-align:center; color:#d81b60; margin-bottom:15px; display:none;">Anggota</h3>
+            <div class="grid-members-mini" id="list-member-anggota" style="margin-bottom: 40px;"></div>
+            
+            <h3 id="title-trainee" style="text-align:center; color:#d81b60; margin-bottom:15px; display:none;">Trainee</h3>
+            <div class="grid-members-mini" id="list-member-trainee"></div>
         </div>
 
         <div id="view-member-detail" class="view-section">
@@ -259,7 +268,7 @@
         <div id="view-song-detail" class="view-section">
             <div class="detail-box" id="info-detail-song"></div>
             <div style="text-align: center; margin-top: 35px;">
-                <button class="btn-back" onclick="bukaHalaman('view-album-detail')">&#11013; Kembali ke Tracklist</button>
+                <button id="btn-back-song" class="btn-back" onclick="bukaHalaman('view-album-detail')">&#11013; Kembali ke Tracklist</button>
             </div>
         </div>
 
@@ -315,6 +324,16 @@
             
             return { kelas: 'status-anggota', teks: status }; 
         }
+        
+        // --- LOGIKA WARNA TIM KHUSUS ---
+        function getTeamColor(teamName) {
+            if (!teamName) return ''; // Menggunakan default css
+            const t = teamName.toLowerCase();
+            if (t.includes('dream')) return '#01a5a6'; // Cyan / Teal
+            if (t.includes('love')) return '#e20787';  // Magenta / Pink
+            if (t.includes('passion')) return '#f7941f'; // Orange
+            return ''; // Default fallback
+        }
 
         // --- PENGATURAN FOTO CUSTOM ---
         function dapatkanURLFotoCustom(namaMember, judulShowOrAlbum, fotoAsli, tipeAlbum, nomorSingle) {
@@ -363,8 +382,10 @@
             const akhirBulan = new Date(tahun, bulan, 0, 23, 59, 59).toISOString();
 
             const { data, error } = await supabaseClient
-                .from('theater_schedules').select('*')
-                .gte('tanggal_waktu', awalBulan).lte('tanggal_waktu', akhirBulan)
+                .from('theater_schedules')
+                .select('*')
+                .gte('tanggal_waktu', awalBulan)
+                .lte('tanggal_waktu', akhirBulan)
                 .order('tanggal_waktu', { ascending: true });
 
             loading.style.display = 'none';
@@ -396,26 +417,41 @@
                 const formatWaktu = tgl.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute:'2-digit' }) + ' WIB';
 
                 const tipeJadwal = jadwal.tipe_jadwal || 'Theater';
+                const tipeSekunder = jadwal.tipe_jadwal_sekunder || '';
+                
                 let classBadgeTipe = 'tipe-theater';
                 let warnaTeksJudul = '#d81b60'; 
+                let teksBadge = tipeJadwal.toUpperCase();
 
                 if (tipeJadwal !== 'Theater') {
-                    classBadgeTipe = 'tipe-event';
-                    warnaTeksJudul = '#004080'; 
-                    if (tipeJadwal.toLowerCase().includes('ramadhan') || tipeJadwal.toLowerCase().includes('ramadan')) {
-                        classBadgeTipe = 'tipe-ramadan';
-                        warnaTeksJudul = '#28a745'; 
+                    if (tipeSekunder.toUpperCase() === 'RAMADAN' || tipeSekunder.toUpperCase() === 'RAMADHAN') {
+                        classBadgeTipe = 'tipe-ramadan'; 
+                        warnaTeksJudul = '#28a745';
+                        teksBadge = 'RAMADAN';
+                    } else if (tipeSekunder.toUpperCase() === 'OFC') {
+                        classBadgeTipe = 'tipe-ofc'; 
+                        warnaTeksJudul = '#b8860b'; 
+                        teksBadge = 'OFC EVENT';
+                    } else if (tipeSekunder.toUpperCase() === 'OFFAIR') {
+                        classBadgeTipe = 'tipe-offair'; 
+                        warnaTeksJudul = '#004080';
+                        teksBadge = 'OFFAIR';
+                    } else {
+                        classBadgeTipe = 'tipe-event'; 
+                        warnaTeksJudul = '#004080';
+                        teksBadge = 'EVENT';
                     }
                 }
 
                 const div = document.createElement('div');
                 div.className = 'list-item';
                 div.style.borderLeftColor = warnaTeksJudul; 
-                div.onclick = () => muatDetailJadwal(jadwal.id, jadwal.judul_show, formatWaktu, jadwal.lokasi, tipeJadwal, jadwal.foto_event);
+                div.onclick = () => muatDetailJadwal(jadwal.id, jadwal.judul_show, formatWaktu, jadwal.lokasi, tipeJadwal, jadwal.foto_event, tipeSekunder);
+                
                 div.innerHTML = `
                     <div>
                         <div class="list-subtitle">
-                            <span class="badge-tipe-jadwal ${classBadgeTipe}">${tipeJadwal.toUpperCase()}</span>
+                            <span class="badge-tipe-jadwal ${classBadgeTipe}">${teksBadge}</span>
                             ${formatWaktu}
                         </div>
                         <h3 class="list-title" style="color: ${warnaTeksJudul};">${jadwal.judul_show}</h3>
@@ -426,23 +462,29 @@
             });
         }
 
-        async function muatDetailJadwal(scheduleId, judul, waktu, lokasi, tipeJadwal, fotoEvent) {
+        async function muatDetailJadwal(scheduleId, judul, waktu, lokasi, tipeJadwal, fotoEvent, tipeSekunder) {
             bukaHalaman('view-schedule-detail');
             
             let warnaTema = '#d81b60'; 
             let tipeJudulFoto = 'Foto Teater';
+            
+            const elTeksMember = document.getElementById('teks-performing-members');
+            elTeksMember.innerText = 'Performing Members'; 
 
             if (tipeJadwal !== 'Theater') {
-                warnaTema = '#004080'; 
                 tipeJudulFoto = 'Foto Event';
-                if (tipeJadwal.toLowerCase().includes('ramadhan') || tipeJadwal.toLowerCase().includes('ramadan')) {
+                if (tipeSekunder && (tipeSekunder.toUpperCase() === 'RAMADAN' || tipeSekunder.toUpperCase() === 'RAMADHAN')) {
                     warnaTema = '#28a745'; 
+                } else if (tipeSekunder && tipeSekunder.toUpperCase() === 'OFC') {
+                    warnaTema = '#b8860b'; 
+                    elTeksMember.innerText = 'Participating Members';
+                } else {
+                    warnaTema = '#004080'; 
                 }
             }
 
             const elJudul = document.getElementById('detail-judul-jadwal');
             const elLokasi = document.getElementById('detail-lokasi-jadwal');
-            const elTeksMember = document.getElementById('teks-performing-members');
             const elTeksSetlist = document.getElementById('teks-event-setlist');
             const elAreaFoto = document.getElementById('area-foto-event');
             const elFotoEvent = document.getElementById('detail-foto-event');
@@ -483,7 +525,7 @@
             else {
                 let validMembersData = data.filter(item => item && item.members);
 
-                if (tipeJadwal.toLowerCase().includes('ramadan') || tipeJadwal === 'Event') {
+                if (tipeJadwal !== 'Theater') {
                     validMembersData.sort((a, b) => {
                         const statusA = (a.members.status || 'Anggota').toLowerCase();
                         const statusB = (b.members.status || 'Anggota').toLowerCase();
@@ -570,7 +612,7 @@
                     const div = document.createElement('div');
                     div.className = 'list-item';
                     div.style.borderLeftColor = warnaTema;
-                    div.onclick = () => muatDetailLagu(lagu.id);
+                    div.onclick = () => muatDetailLagu(lagu.id, 'view-schedule-detail');
                     
                     const tampilanTrack = item.track_number ? `Track ${item.track_number}` : `Track ${index + 1}`;
                     const badgeTipeLagu = lagu.tipe_lagu ? `<span class="badge-tipe-lagu" style="background-color:${warnaTema};">${lagu.tipe_lagu}</span>` : '';
@@ -598,12 +640,17 @@
         }
 
         // ==========================================
-        // FITUR 2: MEMBER 
+        // FITUR 2: MEMBER (DENGAN SPLIT ANGGOTA & TRAINEE + WARNA TIM)
         // ==========================================
         let dataSemuaMember = []; 
+        
         async function muatDaftarMember() {
-            const container = document.getElementById('list-member');
+            const containerAnggota = document.getElementById('list-member-anggota');
+            const containerTrainee = document.getElementById('list-member-trainee');
             const loading = document.getElementById('loading-member');
+            const titleAnggota = document.getElementById('title-anggota');
+            const titleTrainee = document.getElementById('title-trainee');
+            
             if(dataSemuaMember.length > 0) { loading.style.display = 'none'; return; }
 
             const { data, error } = await supabaseClient
@@ -613,9 +660,18 @@
                 .order('nama', { ascending: true });
 
             loading.style.display = 'none';
-            if (error) return container.innerHTML = `<p style="color:red;">Gagal memuat: ${error.message}</p>`;
+            
+            if (error) {
+                containerAnggota.innerHTML = `<p style="color:red; text-align:center; width: 100%;">Gagal memuat: ${error.message}</p>`;
+                return;
+            }
 
-            dataSemuaMember = data; container.innerHTML = '';
+            dataSemuaMember = data; 
+            containerAnggota.innerHTML = '';
+            containerTrainee.innerHTML = '';
+            
+            titleAnggota.style.display = 'block';
+            titleTrainee.style.display = 'block';
             
             data.forEach(member => {
                 const namaPendek = member.nama_panggilan || member.nama.split(' ')[0];
@@ -651,16 +707,23 @@
                 const infoStatus = getFormatStatusMember(member.status);
                 let displayTeks = infoStatus.teks;
                 let badgeClass = infoStatus.kelas;
+                let inlineStyle = '';
 
-                if (member.team && !s.includes('trainee')) {
+                const isTrainee = s.includes('trainee');
+
+                // LOGIKA WARNA TIM DINAMIS
+                if (member.team && !isTrainee) {
                     displayTeks = member.team;
-                    badgeClass = 'status-anggota'; 
-                } else if (s.includes('trainee')) {
+                    const customColor = getTeamColor(member.team);
+                    if (customColor) {
+                        inlineStyle = `background-color: ${customColor};`;
+                    }
+                } else if (isTrainee) {
                     displayTeks = 'Trainee';
                     badgeClass = 'status-trainee'; 
                 }
 
-                let bottomBadgeHtml = `<div style="margin-top:auto; width:100%;"><span class="status-badge ${badgeClass}">${displayTeks}</span></div>`;
+                let bottomBadgeHtml = `<div style="margin-top:auto; width:100%;"><span class="status-badge ${badgeClass}" ${inlineStyle ? `style="${inlineStyle}"` : ''}>${displayTeks}</span></div>`;
                 
                 const card = document.createElement('div');
                 card.className = 'card-member-mini';
@@ -675,7 +738,12 @@
                     <h3 style="margin-top: 5px; margin-bottom: 2px; ${h3Style}">${namaPendek}</h3>
                     ${bottomBadgeHtml}
                 `;
-                container.appendChild(card);
+                
+                if (isTrainee) {
+                    containerTrainee.appendChild(card);
+                } else {
+                    containerAnggota.appendChild(card);
+                }
             });
         }
 
@@ -689,7 +757,7 @@
                 .from('performing_members')
                 .select(`
                     theater_schedules!inner (
-                        id, judul_show, tanggal_waktu, tipe_jadwal, lokasi, foto_event
+                        id, judul_show, tanggal_waktu, tipe_jadwal, tipe_jadwal_sekunder, lokasi, foto_event
                     )
                 `)
                 .eq('member_id', memberId)
@@ -715,15 +783,29 @@
                 const formatWaktu = tgl.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute:'2-digit' }) + ' WIB';
 
                 const tipeJadwal = jadwal.tipe_jadwal || 'Theater';
+                const tipeSekunder = jadwal.tipe_jadwal_sekunder || '';
+                
                 let classBadgeTipe = 'tipe-theater';
                 let warnaTeksJudul = '#d81b60'; 
+                let teksBadge = tipeJadwal.toUpperCase();
 
                 if (tipeJadwal !== 'Theater') {
-                    classBadgeTipe = 'tipe-event';
-                    warnaTeksJudul = '#004080'; 
-                    if (tipeJadwal.toLowerCase().includes('ramadhan') || tipeJadwal.toLowerCase().includes('ramadan')) {
-                        classBadgeTipe = 'tipe-ramadan';
-                        warnaTeksJudul = '#28a745'; 
+                    if (tipeSekunder.toUpperCase() === 'RAMADAN' || tipeSekunder.toUpperCase() === 'RAMADHAN') {
+                        classBadgeTipe = 'tipe-ramadan'; 
+                        warnaTeksJudul = '#28a745';
+                        teksBadge = 'RAMADAN';
+                    } else if (tipeSekunder.toUpperCase() === 'OFC') {
+                        classBadgeTipe = 'tipe-ofc'; 
+                        warnaTeksJudul = '#b8860b'; 
+                        teksBadge = 'OFC EVENT';
+                    } else if (tipeSekunder.toUpperCase() === 'OFFAIR') {
+                        classBadgeTipe = 'tipe-offair'; 
+                        warnaTeksJudul = '#004080';
+                        teksBadge = 'OFFAIR';
+                    } else {
+                        classBadgeTipe = 'tipe-event'; 
+                        warnaTeksJudul = '#004080';
+                        teksBadge = 'EVENT';
                     }
                 }
 
@@ -731,12 +813,12 @@
                 div.className = 'list-item';
                 div.style.borderLeftColor = warnaTeksJudul; 
                 div.style.padding = '15px'; 
-                div.onclick = () => muatDetailJadwal(jadwal.id, jadwal.judul_show, formatWaktu, jadwal.lokasi, tipeJadwal, jadwal.foto_event);
+                div.onclick = () => muatDetailJadwal(jadwal.id, jadwal.judul_show, formatWaktu, jadwal.lokasi, tipeJadwal, jadwal.foto_event, tipeSekunder);
                 
                 div.innerHTML = `
                     <div>
                         <div class="list-subtitle" style="font-size: 0.85em;">
-                            <span class="badge-tipe-jadwal ${classBadgeTipe}" style="font-size: 0.9em; padding: 2px 8px;">${tipeJadwal.toUpperCase()}</span>
+                            <span class="badge-tipe-jadwal ${classBadgeTipe}" style="font-size: 0.9em; padding: 2px 8px;">${teksBadge}</span>
                             ${formatWaktu}
                         </div>
                         <h3 class="list-title" style="color: ${warnaTeksJudul}; font-size: 1.1em; margin-top: 5px;">${jadwal.judul_show}</h3>
@@ -815,7 +897,9 @@
 
             let badgesHtml = `<span class="status-badge ${infoStatus.kelas}">${infoStatus.teks}</span>`;
             if (member.team) {
-                badgesHtml += `<span class="status-badge" style="background-color: #d81b60;">${member.team}</span>`;
+                const customColor = getTeamColor(member.team);
+                let inlineStyle = customColor ? `background-color: ${customColor};` : `background-color: #d81b60;`;
+                badgesHtml += `<span class="status-badge" style="${inlineStyle}">${member.team}</span>`;
             }
             if (member.generasi) {
                 const angkaGen = String(member.generasi).replace(/\D/g, ''); 
@@ -1019,7 +1103,7 @@
             dataSongs.forEach((lagu, index) => {
                 const div = document.createElement('div');
                 div.className = 'list-item';
-                div.onclick = () => muatDetailLagu(lagu.id);
+                div.onclick = () => muatDetailLagu(lagu.id, 'view-album-detail');
                 
                 const tampilanTrack = lagu.track_number ? `Track ${lagu.track_number}` : `Track ${index + 1}`;
                 const badgeTipeLagu = lagu.tipe_lagu ? `<span class="badge-tipe-lagu">${lagu.tipe_lagu}</span>` : '';
@@ -1040,8 +1124,18 @@
             });
         }
 
-        async function muatDetailLagu(songId) {
+        async function muatDetailLagu(songId, asalHalaman = 'view-album-detail') {
             bukaHalaman('view-song-detail');
+            
+            const btnBack = document.getElementById('btn-back-song');
+            if (asalHalaman === 'view-schedule-detail') {
+                btnBack.setAttribute('onclick', "bukaHalaman('view-schedule-detail')");
+                btnBack.innerHTML = '&#11013; Kembali ke Detail Event';
+            } else {
+                btnBack.setAttribute('onclick', "bukaHalaman('view-album-detail')");
+                btnBack.innerHTML = '&#11013; Kembali ke Tracklist';
+            }
+
             const container = document.getElementById('info-detail-song');
             container.innerHTML = `<p style="text-align:center;">Memuat lirik...</p>`;
 
