@@ -56,6 +56,7 @@
         
         .status-setlist { background-color: #ff9800; }
         .status-single { background-color: #03a9f4; }
+        .status-digital-single { background-color: #673ab7; } /* Warna khusus Digital Single */
         .status-album { background-color: #4caf50; }
         .status-kategori { background-color: #8e24aa; } 
 
@@ -241,6 +242,7 @@
                     <option value="Semua">Semua Tipe</option>
                     <option value="Setlist">Setlist</option>
                     <option value="Single">Single</option>
+                    <option value="Digital Single">Digital Single</option>
                     <option value="Album">Album</option>
                     <option value="Project">Project</option>
                 </select>
@@ -253,9 +255,11 @@
             <img id="detail-header-single" src="" alt="Header Single" style="width: 100%; max-width: 800px; height: 250px; border-radius: 15px; object-fit: cover; display: none; margin: 0 auto 20px auto; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
             <img id="detail-cover-album" src="" alt="Cover Album" style="width: 200px; height: 200px; border-radius: 15px; object-fit: cover; display: block; margin: 0 auto 15px auto; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" onerror="this.onerror=null; this.src='https://jkt48.com/images/logo.svg'; this.style.backgroundColor='#d81b60';">
             
-            <h2 id="detail-judul-album" style="margin-top: 0;">Judul Album</h2>
+            <h2 id="detail-judul-album" style="margin-top: 0; margin-bottom: 25px;">Judul Album</h2>
             
-            <div id="loading-album-members" style="text-align: center; display: none; font-size: 0.9em; color:#666;">Memuat performing members...</div>
+            <h4 id="teks-album-members" style="text-align:center; color:#d81b60; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px; font-size: 0.9em; display: none;">Senbatsu Members</h4>
+            
+            <div id="loading-album-members" style="text-align: center; display: none; font-size: 0.9em; color:#666;">Memuat member...</div>
             <div class="album-members-container" id="list-album-members"></div>
             <hr id="garis-pemisah-album" style="border: 0; height: 1px; background: #f8bbd0; margin: 20px auto; max-width: 800px; display: none;">
             <div id="loading-songs-in-album" style="text-align: center; display: none;">Memuat lagu...</div>
@@ -301,6 +305,41 @@
             window.scrollTo(0, 0); 
         }
 
+        // --- CEK ULANG TAHUN HARI INI ---
+        function isBirthdayToday(tanggalLahir) {
+            if (!tanggalLahir) return false;
+            const today = new Date();
+            const currentMonth = today.getMonth() + 1;
+            const currentDay = today.getDate();
+            
+            // Format 1: YYYY-MM-DD
+            const parts = tanggalLahir.split('-');
+            if (parts.length === 3 && parts[0].length === 4) {
+                return parseInt(parts[1]) === currentMonth && parseInt(parts[2]) === currentDay;
+            }
+            
+            // Format 2: Teks Bahasa Indonesia (e.g., 26 Februari 2004)
+            const str = tanggalLahir.toLowerCase();
+            const bulanIndo = ['januari', 'februari', 'maret', 'april', 'mei', 'juni', 'juli', 'agustus', 'september', 'oktober', 'november', 'desember'];
+            for (let i = 0; i < bulanIndo.length; i++) {
+                if (str.includes(bulanIndo[i])) {
+                    const dayMatch = str.match(/\d+/);
+                    if (dayMatch) {
+                        const day = parseInt(dayMatch[0]);
+                        return day === currentDay && (i + 1) === currentMonth;
+                    }
+                }
+            }
+            
+            // Format 3: Fallback Date standar
+            const d = new Date(tanggalLahir);
+            if (!isNaN(d.getTime())) {
+                return d.getDate() === currentDay && (d.getMonth() + 1) === currentMonth;
+            }
+            
+            return false;
+        }
+
         // --- FORMAT TANGGAL INDONESIA ---
         function formatTanggalIndo(tanggalString) {
             if (!tanggalString) return '<span style="color:#aaa; font-style:italic;">Tanggal tidak diketahui</span>';
@@ -327,12 +366,12 @@
         
         // --- LOGIKA WARNA TIM KHUSUS ---
         function getTeamColor(teamName) {
-            if (!teamName) return ''; // Menggunakan default css
+            if (!teamName) return ''; 
             const t = teamName.toLowerCase();
             if (t.includes('dream')) return '#01a5a6'; // Cyan / Teal
             if (t.includes('love')) return '#e20787';  // Magenta / Pink
             if (t.includes('passion')) return '#f7941f'; // Orange
-            return ''; // Default fallback
+            return ''; 
         }
 
         // --- PENGATURAN FOTO CUSTOM ---
@@ -617,8 +656,12 @@
                     const tampilanTrack = item.track_number ? `Track ${item.track_number}` : `Track ${index + 1}`;
                     const badgeTipeLagu = lagu.tipe_lagu ? `<span class="badge-tipe-lagu" style="background-color:${warnaTema};">${lagu.tipe_lagu}</span>` : '';
                     
-                    const teksDibawakan = item.dibawakan_oleh ? item.dibawakan_oleh : (lagu.tipe_dibawakan ? lagu.tipe_dibawakan : 'All Member');
-                    const badgeTipeDibawakan = `<span class="badge-tipe-bawa">${teksDibawakan}</span>`;
+                    const teksDibawakan = item.dibawakan_oleh ? item.dibawakan_oleh : (lagu.tipe_dibawakan ? lagu.tipe_dibawakan : '');
+                    const isInstrumentalLagu = lagu.tipe_lagu && lagu.tipe_lagu.toLowerCase() === 'instrumental';
+                    let badgeTipeDibawakan = '';
+                    if (!isInstrumentalLagu && teksDibawakan) {
+                        badgeTipeDibawakan = `<span class="badge-tipe-bawa">${teksDibawakan}</span>`;
+                    }
                     
                     let namaCenter = '';
                     if (item.center1 && item.center1.nama_panggilan) namaCenter += item.center1.nama_panggilan;
@@ -640,7 +683,7 @@
         }
 
         // ==========================================
-        // FITUR 2: MEMBER (DENGAN SPLIT ANGGOTA & TRAINEE + WARNA TIM)
+        // FITUR 2: MEMBER 
         // ==========================================
         let dataSemuaMember = []; 
         
@@ -656,7 +699,6 @@
             const { data, error } = await supabaseClient
                 .from('members')
                 .select('*')
-                .neq('status', 'Graduated') 
                 .order('nama', { ascending: true });
 
             loading.style.display = 'none';
@@ -674,34 +716,39 @@
             titleTrainee.style.display = 'block';
             
             data.forEach(member => {
+                const isGraduatedUser = member.status && member.status.toLowerCase().includes('graduated');
+                if (isGraduatedUser) return; 
+                
                 const namaPendek = member.nama_panggilan || member.nama.split(' ')[0];
                 const s = (member.status || '').toLowerCase();
                 
-                let floatingIcons = ''; 
-                let floatBadge = ''; 
-                let imgStyle = ''; 
-                let h3Style = '';
+                let activeEvents = [];
 
-                if (s.includes('captain')) {
-                    floatingIcons = `<div class="icon-single">&#127894;&#65039;</div>`;
-                    floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, #d4af37, #b8860b);">CAPTAIN</div>`;
-                    imgStyle = `border: 3px solid #d4af37; box-shadow: 0 0 10px rgba(212, 175, 55, 0.6);`;
-                    h3Style = `color: #b8860b;`;
-                } else if (s.includes('announced')) {
-                    floatingIcons = `<div class="icon-single">&#128226;</div>`;
-                    floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, #ad8a9e, #8a667b);">ANNOUNCED</div>`;
-                    imgStyle = `border: 3px solid #ad8a9e; box-shadow: 0 0 10px rgba(173, 138, 158, 0.6);`;
-                    h3Style = `color: #ad8a9e;`;
-                } else if (s.includes('hiatus')) {
-                    floatingIcons = `<div class="icon-single">&#9208;&#65039;</div>`;
-                    floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, #ff9800, #e65100);">HIATUS</div>`;
-                    imgStyle = `border: 3px solid #ff9800; box-shadow: 0 0 10px rgba(255, 152, 0, 0.6);`;
-                    h3Style = `color: #e65100;`;
-                } else if (s.includes('suspended')) {
-                    floatingIcons = `<div class="icon-single">&#128683;</div>`;
-                    floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, #333333, #000000);">SUSPENDED</div>`;
-                    imgStyle = `border: 3px solid #333333; box-shadow: 0 0 10px rgba(51, 51, 51, 0.6);`;
-                    h3Style = `color: #333333;`;
+                // CEK APAKAH MEMBER ULANG TAHUN HARI INI
+                if (isBirthdayToday(member.tanggal_lahir)) {
+                    activeEvents.push({ name: 'BIRTHDAY', icon: '&#127874;', color1: '#e91e63', color2: '#c2185b', textColor: '#c2185b' });
+                }
+                
+                if (s.includes('captain')) activeEvents.push({ name: 'CAPTAIN', icon: '&#127894;&#65039;', color1: '#d4af37', color2: '#b8860b', textColor: '#b8860b' });
+                if (s.includes('announced')) activeEvents.push({ name: 'ANNOUNCED', icon: '&#128226;', color1: '#ad8a9e', color2: '#8a667b', textColor: '#ad8a9e' });
+                if (s.includes('hiatus')) activeEvents.push({ name: 'HIATUS', icon: '&#9208;&#65039;', color1: '#ff9800', color2: '#e65100', textColor: '#e65100' });
+                if (s.includes('suspended')) activeEvents.push({ name: 'SUSPENDED', icon: '&#128683;', color1: '#333333', color2: '#000000', textColor: '#333333' });
+
+                let floatingIcons = ''; let floatBadge = ''; let imgStyle = ''; let h3Style = '';
+
+                if (activeEvents.length === 1) {
+                    const ev = activeEvents[0];
+                    floatingIcons = `<div class="icon-single">${ev.icon}</div>`;
+                    floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, ${ev.color1}, ${ev.color2});">${ev.name}</div>`;
+                    imgStyle = `border: 3px solid ${ev.color1}; box-shadow: 0 0 10px ${ev.color1}99;`;
+                    h3Style = `color: ${ev.textColor};`;
+                } else if (activeEvents.length >= 2) {
+                    const ev1 = activeEvents[0]; const ev2 = activeEvents[1];
+                    floatingIcons = `<div class="icon-dual-left">${ev1.icon}</div><div class="icon-dual-right">${ev2.icon}</div>`;
+                    const badgeText = activeEvents.map(e => e.name).join(' &bull; ');
+                    floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, ${ev1.color1}, ${ev2.color1});">${badgeText}</div>`;
+                    imgStyle = `border: 3px solid transparent; background: linear-gradient(white, white) padding-box, linear-gradient(135deg, ${ev1.color1}, ${ev2.color1}) border-box; box-shadow: 0 0 10px ${ev1.color1}99;`;
+                    h3Style = `color: ${ev1.textColor};`;
                 }
 
                 const infoStatus = getFormatStatusMember(member.status);
@@ -711,7 +758,6 @@
 
                 const isTrainee = s.includes('trainee');
 
-                // LOGIKA WARNA TIM DINAMIS
                 if (member.team && !isTrainee) {
                     displayTeks = member.team;
                     const customColor = getTeamColor(member.team);
@@ -853,23 +899,67 @@
                 return;
             }
 
-            validAlbums.forEach(album => {
-                const div = document.createElement('div');
-                div.className = 'card-senbatsu-mini';
-                div.onclick = () => muatDaftarLaguDiAlbum(album.id, album.judul_album, album.cover_url, album.tipe_album, album.nomor_single);
-                
-                const crown = album.is_center ? `<div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); font-size:1.5em; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5)); z-index:2;">&#128081;</div>` : '';
-                const coverUrl = album.cover_url || 'https://jkt48.com/images/logo.svg';
+            container.innerHTML = ''; 
+            container.className = ''; 
 
-                div.innerHTML = `
-                    <div style="position:relative; display:inline-block;">
-                        ${crown}
-                        <img src="${coverUrl}" onerror="this.onerror=null; this.src='https://jkt48.com/images/logo.svg'; this.style.backgroundColor='#d81b60';" alt="${album.judul_album}">
-                    </div>
-                    <p title="${album.judul_album}">${album.judul_album}</p>
-                `;
-                container.appendChild(div);
+            const groups = [
+                { id: 'Single', title: 'Single' },
+                { id: 'Digital Single', title: 'Digital Single' },
+                { id: 'Setlist', title: 'Setlist / Album' } 
+            ];
+
+            let hasAnyRendered = false;
+
+            groups.forEach(group => {
+                let albumsInGroup = [];
+                if (group.id === 'Setlist') {
+                    albumsInGroup = validAlbums.filter(a => a.tipe_album === 'Setlist' || a.tipe_album === 'Album' || a.tipe_album === 'Project');
+                } else {
+                    albumsInGroup = validAlbums.filter(a => a.tipe_album === group.id);
+                }
+
+                if (albumsInGroup.length > 0) {
+                    hasAnyRendered = true;
+                    
+                    const header = document.createElement('h4');
+                    header.style.textAlign = 'center';
+                    header.style.color = '#666';
+                    header.style.fontSize = '0.9em';
+                    header.style.marginTop = '25px';
+                    header.style.marginBottom = '15px';
+                    header.style.textTransform = 'uppercase';
+                    header.style.letterSpacing = '1px';
+                    header.innerText = group.title;
+                    container.appendChild(header);
+
+                    const grid = document.createElement('div');
+                    grid.className = 'grid-senbatsu-mini';
+                    
+                    albumsInGroup.forEach(album => {
+                        const div = document.createElement('div');
+                        div.className = 'card-senbatsu-mini';
+                        div.onclick = () => muatDaftarLaguDiAlbum(album.id, album.judul_album, album.cover_url, album.tipe_album, album.nomor_single);
+                        
+                        const crown = album.is_center ? `<div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); font-size:1.5em; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5)); z-index:2;">&#128081;</div>` : '';
+                        const coverUrl = album.cover_url || 'https://jkt48.com/images/logo.svg';
+
+                        div.innerHTML = `
+                            <div style="position:relative; display:inline-block;">
+                                ${crown}
+                                <img src="${coverUrl}" onerror="this.onerror=null; this.src='https://jkt48.com/images/logo.svg'; this.style.backgroundColor='#d81b60';" alt="${album.judul_album}">
+                            </div>
+                            <p title="${album.judul_album}">${album.judul_album}</p>
+                        `;
+                        grid.appendChild(div);
+                    });
+
+                    container.appendChild(grid);
+                }
             });
+
+            if (!hasAnyRendered) {
+                 container.innerHTML = `<p style="text-align:center; color:#999; font-style:italic; font-size: 0.9em;">Belum ada data partisipasi senbatsu/setlist.</p>`;
+            }
         }
 
 
@@ -877,6 +967,8 @@
             bukaHalaman('view-member-detail');
             const container = document.getElementById('info-detail-member');
             const infoStatus = getFormatStatusMember(member.status); 
+            
+            const isGraduated = member.status && member.status.toLowerCase().includes('graduated');
             
             let memberSosmedHtml = '';
             if (member.twitter || member.instagram || member.tiktok) {
@@ -905,6 +997,23 @@
                 const angkaGen = String(member.generasi).replace(/\D/g, ''); 
                 badgesHtml += `<span class="status-badge" style="background-color: #9c27b0;">Gen ${angkaGen}</span>`;
             }
+            
+            // Tambahkan Badge Khusus jika hari ini Ulang Tahunnya di halaman Profil!
+            if (isBirthdayToday(member.tanggal_lahir)) {
+                badgesHtml += `<span class="status-badge" style="background-color: #e91e63; font-size: 0.85em; box-shadow: 0 0 10px rgba(233, 30, 99, 0.4);">&#127874; HAPPY BIRTHDAY!</span>`;
+            }
+
+            let jadwalMendatangHtml = '';
+            if (!isGraduated) {
+                jadwalMendatangHtml = `
+                    <div style="margin-top: 45px; margin-bottom: 10px;">
+                        <hr style="border: 0; height: 1px; background: #ddd; margin: 0 auto 20px auto;">
+                        <h3 style="text-align:center; color:#d81b60; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px; font-size: 1em;">Jadwal Mendatang</h3>
+                        <div id="loading-member-schedule" style="text-align: center; font-size: 0.85em; color:#666;">Memuat jadwal...</div>
+                        <div class="list-container" id="list-member-schedule"></div>
+                    </div>
+                `;
+            }
 
             container.innerHTML = `
                 <img src="${member.foto_url}" onerror="this.onerror=null; this.src='https://jkt48.com/images/logo.svg'; this.style.backgroundColor='#d81b60';" class="foto-profil" alt="${member.nama}">
@@ -928,22 +1037,20 @@
                 <p><strong>Horoskop:</strong> ${member.horoskop || '-'}</p>
                 <p><strong>Tinggi Badan:</strong> ${member.tinggi_badan || '-'}</p>
                 
-                <div style="margin-top: 45px; margin-bottom: 10px;">
-                    <hr style="border: 0; height: 1px; background: #ddd; margin: 0 auto 20px auto;">
-                    <h3 style="text-align:center; color:#d81b60; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px; font-size: 1em;">Jadwal Mendatang</h3>
-                    <div id="loading-member-schedule" style="text-align: center; font-size: 0.85em; color:#666;">Memuat jadwal...</div>
-                    <div class="list-container" id="list-member-schedule"></div>
-                </div>
+                ${jadwalMendatangHtml}
 
                 <div style="margin-top: 45px; margin-bottom: 20px;">
                     <hr style="border: 0; height: 1px; background: #ddd; margin: 0 auto 20px auto;">
-                    <h3 style="text-align:center; color:#d81b60; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px; font-size: 1em;">Senbatsu Participation</h3>
+                    <h3 style="text-align:center; color:#d81b60; margin-bottom:5px; text-transform:uppercase; letter-spacing:1px; font-size: 1em;">Senbatsu Participation</h3>
                     <div id="loading-member-senbatsu" style="text-align: center; font-size: 0.85em; color:#666;">Memuat partisipasi...</div>
-                    <div class="grid-senbatsu-mini" id="list-member-senbatsu"></div>
+                    <div id="list-member-senbatsu"></div>
                 </div>
             `;
 
-            muatJadwalMember(member.id);
+            if (!isGraduated) {
+                muatJadwalMember(member.id);
+            }
+            
             muatSenbatsuMember(member.id);
         }
 
@@ -992,8 +1099,10 @@
             }
             dataAlbum.forEach(album => {
                 const cover = album.cover_url || 'https://jkt48.com/images/logo.svg'; 
+                
                 let warnaBadgeTipe = 'status-setlist';
                 if (album.tipe_album === 'Single') warnaBadgeTipe = 'status-single';
+                else if (album.tipe_album === 'Digital Single') warnaBadgeTipe = 'status-digital-single';
                 else if (album.tipe_album === 'Album') warnaBadgeTipe = 'status-album';
 
                 let badgeKategoriHtml = '';
@@ -1047,8 +1156,12 @@
             const containerMembers = document.getElementById('list-album-members');
             const loadingMembers = document.getElementById('loading-album-members');
             const garisPemisah = document.getElementById('garis-pemisah-album');
+            const teksAlbumMembers = document.getElementById('teks-album-members');
             
-            containerMembers.innerHTML = ''; garisPemisah.style.display = 'none'; loadingMembers.style.display = 'block';
+            containerMembers.innerHTML = ''; 
+            garisPemisah.style.display = 'none'; 
+            teksAlbumMembers.style.display = 'none';
+            loadingMembers.style.display = 'block';
 
             const { data: dataMembers, error: errMembers } = await supabaseClient
                 .from('album_performing_members')
@@ -1061,6 +1174,10 @@
 
             if (!errMembers && dataMembers && dataMembers.length > 0) {
                 let validDataMembers = dataMembers.filter(item => item && item.members);
+
+                if (validDataMembers.length > 0) {
+                    teksAlbumMembers.style.display = 'block';
+                }
 
                 if (validDataMembers.length === 12) {
                     containerMembers.style.maxWidth = '550px'; 
@@ -1107,7 +1224,12 @@
                 
                 const tampilanTrack = lagu.track_number ? `Track ${lagu.track_number}` : `Track ${index + 1}`;
                 const badgeTipeLagu = lagu.tipe_lagu ? `<span class="badge-tipe-lagu">${lagu.tipe_lagu}</span>` : '';
-                const badgeTipeDibawakan = lagu.tipe_dibawakan ? `<span class="badge-tipe-bawa">${lagu.tipe_dibawakan}</span>` : `<span class="badge-tipe-bawa">All Member</span>`;
+                
+                const isInstrumentalLagu = lagu.tipe_lagu && lagu.tipe_lagu.toLowerCase() === 'instrumental';
+                let badgeTipeDibawakan = '';
+                if (!isInstrumentalLagu && lagu.tipe_dibawakan) {
+                    badgeTipeDibawakan = `<span class="badge-tipe-bawa">${lagu.tipe_dibawakan}</span>`;
+                }
 
                 div.innerHTML = `
                     <div>
@@ -1148,27 +1270,34 @@
             if(data.link_spotify) linksHtml += `<a href="${data.link_spotify}" target="_blank" class="link-sp">&#9835; Spotify</a>`;
             if(data.link_apple_music) linksHtml += `<a href="${data.link_apple_music}" target="_blank" class="link-am">&#9834; Apple Music</a>`;
 
-            const tipeDibawakanText = data.tipe_dibawakan || 'All Member';
+            const tipeDibawakanText = data.tipe_dibawakan || '';
             const tipeLaguText = data.tipe_lagu || '';
             const judulAlbumLagu = data.albums?.judul_album || '';
             const tipeAlbumLagu = data.albums?.tipe_album || '';
             const nomorSingleLagu = data.albums?.nomor_single || null;
+            const isInstrumental = tipeLaguText.toLowerCase() === 'instrumental';
 
-            let headerMembersText = "Performing Members";
-            if (tipeDibawakanText.toLowerCase().includes('senbatsu')) {
-                headerMembersText = "Senbatsu Members";
-            } else if (tipeDibawakanText.toLowerCase().includes('undergirls')) {
-                headerMembersText = "Undergirls Members";
-            }
+            let headerMembersText = "Recording Members"; 
 
             let badgeBarHtml = `<div style="text-align:center; margin-bottom: 25px;">`;
             if (tipeLaguText) {
                 badgeBarHtml += `<span class="badge-tipe-lagu" style="font-size: 0.85em; padding: 4px 12px; border-radius: 15px;">${tipeLaguText}</span>`;
             }
-            if (tipeDibawakanText) {
+            if (!isInstrumental && tipeDibawakanText) {
                 badgeBarHtml += `<span class="badge-tipe-bawa" style="font-size: 0.85em; padding: 4px 12px; border-radius: 15px;">${tipeDibawakanText}</span>`;
             }
             badgeBarHtml += `</div>`;
+
+            let membersSectionHtml = '';
+            if (!isInstrumental) {
+                membersSectionHtml = `
+                    <div style="margin-top: 30px; margin-bottom: 10px;">
+                        <h4 style="text-align:center; color:#d81b60; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px; font-size: 0.9em;">${headerMembersText}</h4>
+                        <div id="loading-song-members" style="text-align: center; font-size: 0.85em; color:#666;">Memuat foto member...</div>
+                        <div class="album-members-container" id="list-song-members"></div>
+                    </div>
+                `;
+            }
 
             container.innerHTML = `
                 <h2 style="margin-top:0; margin-bottom: 5px;">${data.judul_lagu}</h2>
@@ -1176,68 +1305,66 @@
                 
                 ${badgeBarHtml}
                 
-                <div style="margin-top: 30px; margin-bottom: 10px;">
-                    <h4 style="text-align:center; color:#d81b60; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px; font-size: 0.9em;">${headerMembersText}</h4>
-                    <div id="loading-song-members" style="text-align: center; font-size: 0.85em; color:#666;">Memuat foto member...</div>
-                    <div class="album-members-container" id="list-song-members"></div>
-                </div>
+                ${membersSectionHtml}
 
                 ${linksHtml ? `<div class="song-links">${linksHtml}</div>` : ''}
 
                 <div class="lyrics-area">${data.lirik || 'Lirik belum tersedia.'}</div>
             `;
 
-            const containerMembers = document.getElementById('list-song-members');
-            const loadingMembers = document.getElementById('loading-song-members');
+            if (!isInstrumental) {
+                const containerMembers = document.getElementById('list-song-members');
+                const loadingMembers = document.getElementById('loading-song-members');
 
-            let { data: specificMembers } = await supabaseClient
-                .from('song_performing_members')
-                .select('is_center, blocking, members(id, nama, nama_panggilan, foto_url)')
-                .eq('song_id', songId)
-                .order('blocking', { ascending: true, nullsFirst: false }) 
-                .order('is_center', { ascending: false });
-
-            let finalMembersToRender = specificMembers;
-
-            if ((!specificMembers || specificMembers.length === 0) && tipeDibawakanText !== 'Unit Song' && tipeDibawakanText !== 'Solo') {
-                const { data: albumMembers } = await supabaseClient
-                    .from('album_performing_members')
+                let { data: specificMembers } = await supabaseClient
+                    .from('song_performing_members')
                     .select('is_center, blocking, members(id, nama, nama_panggilan, foto_url)')
-                    .eq('album_id', data.albums?.id)
+                    .eq('song_id', songId)
                     .order('blocking', { ascending: true, nullsFirst: false }) 
                     .order('is_center', { ascending: false });
-                
-                finalMembersToRender = albumMembers;
-            }
 
-            loadingMembers.style.display = 'none';
+                let finalMembersToRender = specificMembers;
 
-            let validFinalMembers = finalMembersToRender ? finalMembersToRender.filter(item => item && item.members) : [];
-
-            if (validFinalMembers.length === 12) {
-                containerMembers.style.maxWidth = '550px'; 
-            } else {
-                containerMembers.style.maxWidth = '800px'; 
-            }
-
-            if (validFinalMembers.length > 0) {
-                validFinalMembers.forEach(item => {
-                    const m = item.members;
-                    const isCenterUI = item.is_center && tipeDibawakanText !== 'All Member';
-                    const div = document.createElement('div');
-                    div.className = isCenterUI ? 'album-member-small is-center' : 'album-member-small';
-                    div.onclick = () => muatDetailMemberById(m.id); 
+                if ((!specificMembers || specificMembers.length === 0) && tipeDibawakanText !== 'Unit Song' && tipeDibawakanText !== 'Solo') {
+                    const { data: albumMembers } = await supabaseClient
+                        .from('album_performing_members')
+                        .select('is_center, blocking, members(id, nama, nama_panggilan, foto_url)')
+                        .eq('album_id', data.albums?.id)
+                        .order('blocking', { ascending: true, nullsFirst: false }) 
+                        .order('is_center', { ascending: false });
                     
-                    const namaPendek = m.nama_panggilan || m.nama.split(' ')[0];
-                    const crownHtml = isCenterUI ? `<div class="center-crown">&#128081;</div><div class="center-badge">CENTER</div>` : '';
+                    finalMembersToRender = albumMembers;
+                }
 
-                    const fotoSrc = dapatkanURLFotoCustom(m.nama, judulAlbumLagu, m.foto_url, tipeAlbumLagu, nomorSingleLagu);
+                loadingMembers.style.display = 'none';
 
-                    div.innerHTML = `${crownHtml}<img src="${fotoSrc}" onerror="if(!this.hasAttribute('data-tried')){ this.setAttribute('data-tried', '1'); this.src='${m.foto_url}'; } else { this.onerror=null; this.src='https://jkt48.com/images/logo.svg'; this.style.backgroundColor='#d81b60'; }" alt="${m.nama}"><p>${namaPendek}</p>`;
-                    containerMembers.appendChild(div);
-                });
-            } else {
-                containerMembers.innerHTML = `<p style="text-align:center; color:#aaa; font-style:italic; font-size: 0.9em; width: 100%;">Data foto member belum tersedia.</p>`;
+                let validFinalMembers = finalMembersToRender ? finalMembersToRender.filter(item => item && item.members) : [];
+
+                if (validFinalMembers.length === 12) {
+                    containerMembers.style.maxWidth = '550px'; 
+                } else {
+                    containerMembers.style.maxWidth = '800px'; 
+                }
+
+                if (validFinalMembers.length > 0) {
+                    validFinalMembers.forEach(item => {
+                        const m = item.members;
+                        const isCenterUI = item.is_center && tipeDibawakanText !== 'All Member';
+                        const div = document.createElement('div');
+                        div.className = isCenterUI ? 'album-member-small is-center' : 'album-member-small';
+                        div.onclick = () => muatDetailMemberById(m.id); 
+                        
+                        const namaPendek = m.nama_panggilan || m.nama.split(' ')[0];
+                        const crownHtml = isCenterUI ? `<div class="center-crown">&#128081;</div><div class="center-badge">CENTER</div>` : '';
+
+                        const fotoSrc = dapatkanURLFotoCustom(m.nama, judulAlbumLagu, m.foto_url, tipeAlbumLagu, nomorSingleLagu);
+
+                        div.innerHTML = `${crownHtml}<img src="${fotoSrc}" onerror="if(!this.hasAttribute('data-tried')){ this.setAttribute('data-tried', '1'); this.src='${m.foto_url}'; } else { this.onerror=null; this.src='https://jkt48.com/images/logo.svg'; this.style.backgroundColor='#d81b60'; }" alt="${m.nama}"><p>${namaPendek}</p>`;
+                        containerMembers.appendChild(div);
+                    });
+                } else {
+                    containerMembers.innerHTML = `<p style="text-align:center; color:#aaa; font-style:italic; font-size: 0.9em; width: 100%;">Data foto member belum tersedia.</p>`;
+                }
             }
         }
 
