@@ -258,7 +258,7 @@
 
         <div id="view-album-detail" class="view-section">
             <img id="detail-header-single" src="" alt="Header Single" style="width: 100%; max-width: 800px; height: 250px; border-radius: 15px; object-fit: cover; display: none; margin: 0 auto 20px auto; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
-            <img id="detail-cover-album" src="" alt="Cover Album" style="width: 200px; height: 200px; border-radius: 15px; object-fit: cover; display: block; margin: 0 auto 15px auto; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" onerror="this.onerror=null; this.src='images/logo.svg'; this.style.backgroundColor='#d81b60';">
+            <img id="detail-cover-album" src="" alt="Cover Album" style="width: 200px; height: 200px; border-radius: 15px; object-fit: cover; display: block; margin: 0 auto 15px auto; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" onerror="this.onerror=null; this.src='favicon.png'; this.style.backgroundColor='#d81b60';">
             
             <h2 id="detail-judul-album" style="margin-top: 0; margin-bottom: 25px;">Judul Album</h2>
             
@@ -390,22 +390,33 @@
         }
 
         // ==========================================
-        // SISTEM GENERATE FOTO & FALLBACK RECURSIVE
+        // SISTEM FOTO LOKAL (SIMPLIFIED & FLAT)
         // ==========================================
+        function getFolderStatus(statusStr) {
+            if (!statusStr) return 'anggota';
+            const s = statusStr.toLowerCase();
+            if (s.includes('graduated') || s.includes('graduation')) return 'graduated';
+            if (s.includes('trainee')) return 'trainee';
+            return 'anggota'; // Fallback default (Captain, Announced Grad, Hiatus, Suspended)
+        }
+
+        function getFotoMemberLokal(member) {
+            if (!member || !member.nama) return 'favicon.png';
+            const namaFormat = member.nama.toLowerCase().trim().replace(/\s+/g, '_');
+            const folder = getFolderStatus(member.status);
+            return `images/members/${folder}/${namaFormat}.jpg`;
+        }
+
         function generateMemberImageHtml(member, customJudul = null, customTipe = null, customNomor = null, inlineStyle = '', className = '') {
-            if (!member || !member.nama) return `<img src="images/logo.svg" style="${inlineStyle}; background-color:#d81b60;" class="${className}">`;
+            if (!member || !member.nama) return `<img src="favicon.png" style="${inlineStyle}; background-color:#d81b60;" class="${className}">`;
             
             const namaFormat = member.nama.toLowerCase().trim().replace(/\s+/g, '_');
-            const status = (member.status || 'anggota').toLowerCase();
-            const isTrainee = status.includes('trainee');
-            const tipeStr = isTrainee ? 'trainee' : 'anggota';
-            const genStr = member.generasi ? String(member.generasi).replace(/\D/g, '') : 'unknown';
-            const currentYear = new Date().getFullYear();
+            const folder = getFolderStatus(member.status);
 
             let fotoSrc = '';
             let isCustom = false;
 
-            // 1. Cek jika ada permintaan custom foto (untuk Album / Jadwal)
+            // 1. Cek jika ada permintaan custom foto (untuk Album / Jadwal khusus)
             if (customJudul) {
                 const judul = customJudul.toLowerCase().trim();
                 if (customTipe === 'Single' && customNomor) {
@@ -417,21 +428,14 @@
                 }
             }
 
-            // 2. Jika tidak ada custom foto, gunakan rute foto default (Anggota/Trainee)
+            // 2. Jika tidak ada custom foto, langsung arahkan ke folder flat
             if (!isCustom) {
-                if (isTrainee) {
-                    fotoSrc = `images/members/trainee/generasi_${genStr}/${namaFormat}.jpg`;
-                } else {
-                    fotoSrc = `images/members/anggota/${currentYear}/${namaFormat}.jpg`;
-                }
+                fotoSrc = `images/members/${folder}/${namaFormat}.jpg`;
             }
 
-            // Atribut data-* digunakan agar JS tahu rute mana yang harus diambil jika gambar Error
             return `<img src="${fotoSrc}" 
                          data-nama="${namaFormat}" 
-                         data-tipe="${tipeStr}" 
-                         data-gen="${genStr}" 
-                         data-year="${currentYear}" 
+                         data-folder="${folder}" 
                          data-custom="${isCustom}" 
                          onerror="window.fallbackFoto(this)" 
                          alt="${member.nama}" 
@@ -439,44 +443,23 @@
                          style="${inlineStyle}">`;
         }
 
-        // Fungsi yang dipanggil setiap kali gambar gagal di-load
+        // Fungsi pintar untuk menangani foto yang gagal dimuat
         window.fallbackFoto = function(imgElem) {
             let isCustom = imgElem.getAttribute('data-custom') === 'true';
-            let tipe = imgElem.getAttribute('data-tipe');
+            let folder = imgElem.getAttribute('data-folder');
             let nama = imgElem.getAttribute('data-nama');
-            let gen = imgElem.getAttribute('data-gen');
-            let year = parseInt(imgElem.getAttribute('data-year'));
 
-            // TAHAP 1: Jika gambar Custom (Album/Lagu) gagal, turunkan ke gambar Default Member
+            // Jika foto Custom (Single/Album) gagal, fallback ke foto Default Member
             if (isCustom) {
-                imgElem.setAttribute('data-custom', 'false'); // Matikan flag custom agar tidak loop
-                if (tipe === 'trainee') {
-                    imgElem.src = `images/members/trainee/generasi_${gen}/${nama}.jpg`;
-                } else {
-                    imgElem.src = `images/members/anggota/${year}/${nama}.jpg`;
-                }
-                return; // Berhenti di sini, biarkan browser mencoba meload rute baru ini
+                imgElem.setAttribute('data-custom', 'false'); // Matikan flag agar tidak infinite loop
+                imgElem.src = `images/members/${folder}/${nama}.jpg`; 
+                return; 
             }
 
-            // TAHAP 2: Jika gambar Default Member "Anggota" gagal, turunkan tahunnya (2026 -> 2025 -> 2024...)
-            if (tipe === 'anggota') {
-                if (year > 2011) { // 2011 adalah batas tahun generasi 1 masuk
-                    year--; // Kurangi tahun
-                    imgElem.setAttribute('data-year', year); // Simpan tahun baru ke elemen
-                    imgElem.src = `images/members/anggota/${year}/${nama}.jpg`; // Tembak rute baru
-                } else {
-                    // Jika sampai 2011 tetap tidak ada, menyerah dan pakai Logo JKT48
-                    imgElem.onerror = null; // Matikan fungsi error agar tidak infinite loop
-                    imgElem.src = 'images/logo.svg';
-                    imgElem.style.backgroundColor = '#d81b60';
-                }
-            } 
-            // TAHAP 3: Jika Trainee fotonya tidak ada, langsung pakai Logo
-            else {
-                imgElem.onerror = null;
-                imgElem.src = 'images/logo.svg';
-                imgElem.style.backgroundColor = '#d81b60';
-            }
+            // Jika foto Default Member (Anggota/Trainee/Graduated) juga gagal, pakai Logo (Favicon)
+            imgElem.onerror = null; 
+            imgElem.src = 'favicon.png';
+            imgElem.style.backgroundColor = '#d81b60';
         };
 
         async function hitungPengunjung() {
@@ -519,7 +502,7 @@
                 const lokalFotoSrc = `images/teams/${namaFormat}.jpg`;
                 
                 div.innerHTML = `
-                    <img src="${lokalFotoSrc}" onerror="this.onerror=null; this.src='images/logo.svg';" alt="${team.nama}">
+                    <img src="${lokalFotoSrc}" onerror="this.onerror=null; this.src='favicon.png';" alt="${team.nama}">
                     <h3 style="color:${team.warna || '#333'}">${team.nama}</h3>
                     <p style="font-size:0.85em; color:#666; margin:0; font-weight:bold;">${tahunBentuk} - ${tahunBubar}</p>
                 `;
@@ -545,7 +528,7 @@
             if (captains && captains.length > 0) {
                 captainHtml = '<div class="timeline-captain">';
                 captains.forEach((c, index) => {
-                    const imgHtml = c.members ? generateMemberImageHtml(c.members) : `<img src="images/logo.svg" style="background-color:#d81b60;">`;
+                    const imgHtml = c.members ? generateMemberImageHtml(c.members) : `<img src="favicon.png" style="background-color:#d81b60;">`;
                     const namaPendek = c.members?.nama_panggilan || c.nama_captain.split(' ')[0];
                     const mulai = c.tanggal_mulai ? formatTanggalIndo(c.tanggal_mulai) : '?';
                     const selesai = c.tanggal_selesai ? formatTanggalIndo(c.tanggal_selesai) : 'Sekarang';
@@ -574,7 +557,7 @@
 
             container.innerHTML = `
                 <div style="text-align:center; padding-bottom: 25px; border-bottom: 1px solid #eee;">
-                    <img src="${lokalFotoSrc}" onerror="this.onerror=null; this.src='images/logo.svg';" style="max-width:250px; height:auto; margin-bottom:20px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));">
+                    <img src="${lokalFotoSrc}" onerror="this.onerror=null; this.src='favicon.png';" style="max-width:250px; height:auto; margin-bottom:20px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));">
                     <h1 style="color:${team.warna}; margin-top:0; margin-bottom:10px; font-size:2.5em; text-transform:uppercase;">${team.nama}</h1>
                     
                     <div style="display:flex; justify-content:center; gap:20px; flex-wrap:wrap; font-size:1.1em;">
@@ -1144,12 +1127,12 @@
                         div.onclick = () => muatDaftarLaguDiAlbum(album.id, album.judul_album, album.cover_url, album.tipe_album, album.nomor_single);
                         
                         const crown = album.is_center ? `<div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); font-size:1.5em; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5)); z-index:2;">&#128081;</div>` : '';
-                        const coverUrl = album.cover_url || 'images/logo.svg';
+                        const coverUrl = album.cover_url || 'favicon.png';
 
                         div.innerHTML = `
                             <div style="position:relative; display:inline-block;">
                                 ${crown}
-                                <img src="${coverUrl}" onerror="this.onerror=null; this.src='images/logo.svg'; this.style.backgroundColor='#d81b60';" alt="${album.judul_album}">
+                                <img src="${coverUrl}" onerror="this.onerror=null; this.src='favicon.png'; this.style.backgroundColor='#d81b60';" alt="${album.judul_album}">
                             </div>
                             <p title="${album.judul_album}">${album.judul_album}</p>
                         `;
@@ -1309,7 +1292,7 @@
                 return;
             }
             dataAlbum.forEach(album => {
-                const cover = album.cover_url || 'images/logo.svg'; 
+                const cover = album.cover_url || 'favicon.png'; 
                 
                 let warnaBadgeTipe = 'status-setlist';
                 if (album.tipe_album === 'Single') warnaBadgeTipe = 'status-single';
@@ -1328,7 +1311,7 @@
                 card.onclick = () => muatDaftarLaguDiAlbum(album.id, album.judul_album, cover, album.tipe_album, album.nomor_single);
                 
                 card.innerHTML = `
-                    <img src="${cover}" onerror="this.onerror=null; this.src='images/logo.svg'; this.style.backgroundColor='#d81b60';" alt="${album.judul_album}">
+                    <img src="${cover}" onerror="this.onerror=null; this.src='favicon.png'; this.style.backgroundColor='#d81b60';" alt="${album.judul_album}">
                     <h3 style="margin-bottom: 2px;">${album.judul_album}</h3>
                     <div class="album-date">${tanggalRilisFormat}</div>
                     <div class="album-badges">
