@@ -64,7 +64,7 @@
         .status-kategori { background-color: #8e24aa; } 
 
         /* --- TIPE JADWAL (TEATER/EVENT) --- */
-        .badge-tipe-jadwal { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.8em; font-weight: bold; color: white; margin-right: 8px;}
+        .badge-tipe-jadwal { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.75em; font-weight: bold; color: white; margin-right: 5px; margin-bottom: 5px;}
         .tipe-theater { background-color: #d81b60; }
         .tipe-event { background-color: #004080; } 
         .tipe-ramadan { background-color: #28a745; } 
@@ -201,6 +201,22 @@
         .view-counter-area svg { vertical-align: middle; margin-top: -2px; }
     </style>
 </head>
+
+<script>
+    // Mematikan Klik Kanan
+    document.addEventListener('contextmenu', event => event.preventDefault());
+
+    // Mematikan shortcut keyboard (F12, Ctrl+Shift+I, Ctrl+U, dll)
+    document.onkeydown = function(e) {
+        // F12
+        if (e.keyCode == 123) return false;
+        // Ctrl+Shift+I / J (Inspect Element)
+        if (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0))) return false;
+        // Ctrl+U (View Page Source)
+        if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
+    }
+</script>
+
 <body>
 
     <div class="navbar">
@@ -212,7 +228,7 @@
 
     <div class="container">
         <div id="view-schedule" class="view-section active">
-            <h2>Jadwal & Event</h2>
+            <h2>Jadwal Teater & Event</h2>
             <div class="filter-box">
                 <select id="filter-bulan">
                     <option value="1">Januari</option> <option value="2">Februari</option> <option value="3">Maret</option>
@@ -235,6 +251,11 @@
 
             <div id="loading-schedule" style="text-align: center;">Memuat jadwal...</div>
             <div class="list-container" id="list-jadwal"></div>
+            
+            <div id="nav-bulan" style="display: flex; justify-content: space-between; max-width: 800px; margin: 20px auto; display: none;">
+                <button class="btn-back" onclick="ubahBulan(-1)" style="margin-bottom: 0;">&#11013; Bulan Sebelumnya</button>
+                <button class="btn-back" onclick="ubahBulan(1)" style="margin-bottom: 0;">Bulan Berikutnya &#10145;</button>
+            </div>
         </div>
 
         <div id="view-schedule-detail" class="view-section">
@@ -448,13 +469,9 @@
         function formatNamaDuaBaris(nama) {
             if (!nama) return '';
             const namaTrim = nama.trim();
-            // Pengecualian khusus untuk Gita Sekar Andarini agar baris 1: Gita Sekar, Baris 2: Andarini
             if (namaTrim.toLowerCase() === 'gita sekar andarini') return 'Gita Sekar<br>Andarini';
-            
             const words = namaTrim.split(' ');
-            if (words.length === 1) return namaTrim; // Jika cuma 1 kata, biarkan saja (otomatis di tengah karena flexbox)
-            
-            // Ambil kata pertama, lalu sisa kata digabung di baris kedua
+            if (words.length === 1) return namaTrim; 
             const barisSatu = words.shift();
             const barisDua = words.join(' ');
             return `${barisSatu}<br>${barisDua}`;
@@ -641,7 +658,6 @@
                     const selesai = c.tanggal_selesai ? formatTanggalIndo(c.tanggal_selesai) : 'Sekarang';
                     const aksiKlik = c.members?.id ? `onclick="muatDetailMemberById('${c.members.id}')"` : '';
                     
-                    // Kembalikan pemakaian nama lengkap khusus untuk Captaincy
                     const namaCaptain = c.members ? (c.members.nama_lengkap || c.members.nama) : c.nama_captain;
 
                     captainHtml += `
@@ -668,7 +684,6 @@
             } else if (teamMembers && teamMembers.length > 0) {
                 membersSectionHtml = `<div class="grid-members-mini" style="margin-bottom: 30px;">`;
                 teamMembers.forEach(m => {
-                    // Kembalikan memakai nama panggilan untuk list anggota tim
                     const namaPendek = m.nama_panggilan || m.nama.split(' ')[0];
                     
                     let isThisTeamCaptain = activeTeamCaptainIds.includes(m.id);
@@ -696,7 +711,6 @@
                 historyData.forEach(h => {
                     if(!h.members) return;
                     const m = h.members;
-                    // Kembalikan memakai nama panggilan untuk histori tim
                     const namaPendek = m.nama_panggilan || m.nama.split(' ')[0];
                     
                     const tahunKeluar = h.tanggal_selesai ? new Date(h.tanggal_selesai).getFullYear() : '?';
@@ -793,6 +807,36 @@
         let dataJadwalBulanIni = [];
         let filterJadwalAktif = 'Semua';
 
+        // --- Fungsi Navigasi Bulan ---
+        function ubahBulan(offset) {
+            let selectBulan = document.getElementById('filter-bulan');
+            let selectTahun = document.getElementById('filter-tahun');
+            let bln = parseInt(selectBulan.value);
+            let thn = parseInt(selectTahun.value);
+
+            bln += offset;
+            if (bln > 12) {
+                bln = 1;
+                thn++;
+            } else if (bln < 1) {
+                bln = 12;
+                thn--;
+            }
+
+            selectBulan.value = bln;
+            
+            let yearExists = Array.from(selectTahun.options).some(opt => parseInt(opt.value) === thn);
+            if (!yearExists) {
+                let opt = document.createElement('option');
+                opt.value = thn;
+                opt.text = thn;
+                selectTahun.add(opt);
+            }
+            selectTahun.value = thn;
+
+            terapkanFilterJadwal();
+        }
+
         function terapkanFilterJadwal() {
             const thn = document.getElementById('filter-tahun').value;
             const bln = document.getElementById('filter-bulan').value;
@@ -811,13 +855,15 @@
             const container = document.getElementById('list-jadwal');
             const loading = document.getElementById('loading-schedule');
             container.innerHTML = ''; loading.style.display = 'block';
+            document.getElementById('nav-bulan').style.display = 'none';
             
             const awalBulan = new Date(tahun, bulan - 1, 1).toISOString();
             const akhirBulan = new Date(tahun, bulan, 0, 23, 59, 59).toISOString();
 
+            // Memuat jadwal sekaligus data member (untuk mengecek STS/Grad)
             const { data, error } = await supabaseClient
                 .from('theater_schedules')
-                .select('*')
+                .select('*, performing_members(is_birthday, is_graduation)')
                 .gte('tanggal_waktu', awalBulan)
                 .lte('tanggal_waktu', akhirBulan)
                 .order('tanggal_waktu', { ascending: true });
@@ -841,6 +887,8 @@
                 dataTampil = dataJadwalBulanIni.filter(j => j.tipe_jadwal && j.tipe_jadwal !== 'Theater');
             }
 
+            document.getElementById('nav-bulan').style.display = 'flex'; 
+
             if (dataTampil.length === 0) {
                 container.innerHTML = `<p style="text-align:center;">Belum ada jadwal/event untuk bulan ini.</p>`;
                 return;
@@ -848,50 +896,80 @@
 
             dataTampil.forEach(jadwal => {
                 const tgl = new Date(jadwal.tanggal_waktu);
-                const formatWaktu = tgl.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute:'2-digit' }) + ' WIB';
+                const formatTanggal = tgl.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                const formatJam = tgl.toLocaleTimeString('id-ID', { hour: '2-digit', minute:'2-digit' }).replace('.', ':') + ' WIB';
 
                 const tipeJadwal = jadwal.tipe_jadwal || 'Theater';
                 const tipeSekunder = jadwal.tipe_jadwal_sekunder || '';
+                const judul = jadwal.judul_show || '';
+                const judulLower = judul.toLowerCase();
                 
-                let classBadgeTipe = 'tipe-theater';
-                let warnaTeksJudul = '#d81b60'; 
-                let teksBadge = tipeJadwal.toUpperCase();
-
+                let warnaUtama = '#d81b60'; 
                 if (tipeJadwal !== 'Theater') {
-                    if (tipeSekunder.toUpperCase() === 'RAMADAN' || tipeSekunder.toUpperCase() === 'RAMADHAN') {
-                        classBadgeTipe = 'tipe-ramadan'; 
-                        warnaTeksJudul = '#28a745';
-                        teksBadge = 'RAMADAN';
-                    } else if (tipeSekunder.toUpperCase() === 'OFC') {
-                        classBadgeTipe = 'tipe-ofc'; 
-                        warnaTeksJudul = '#b8860b'; 
-                        teksBadge = 'OFC EVENT';
-                    } else if (tipeSekunder.toUpperCase() === 'OFFAIR') {
-                        classBadgeTipe = 'tipe-offair'; 
-                        warnaTeksJudul = '#004080';
-                        teksBadge = 'OFFAIR';
-                    } else {
-                        classBadgeTipe = 'tipe-event'; 
-                        warnaTeksJudul = '#004080';
-                        teksBadge = 'EVENT';
-                    }
+                    if (tipeSekunder.toUpperCase() === 'RAMADAN' || tipeSekunder.toUpperCase() === 'RAMADHAN') warnaUtama = '#28a745';
+                    else if (tipeSekunder.toUpperCase() === 'OFC') warnaUtama = '#b8860b';
+                    else warnaUtama = '#004080';
+                }
+
+                let badgesHtml = '';
+
+                // 1. Badge Team (Hanya untuk Theater)
+                if (tipeJadwal === 'Theater') {
+                    let namaTeam = 'JKT48';
+                    let warnaTeam = '#d81b60';
+                    if (judulLower.includes('trainee') || judulLower.includes('tunas di balik tulang')) { namaTeam = 'Trainee'; warnaTeam = '#7e57c2'; }
+                    else if (judulLower.includes('team j')) { namaTeam = 'Team J'; warnaTeam = '#ed1c24'; }
+                    else if (judulLower.includes('team kiii')) { namaTeam = 'Team KIII'; warnaTeam = '#ffe900'; }
+                    else if (judulLower.includes('team t')) { namaTeam = 'Team T'; warnaTeam = '#f88ccf'; }
+                    
+                    badgesHtml += `<span class="badge-tipe-jadwal" style="background-color: ${warnaTeam};">${namaTeam}</span>`;
+                }
+
+                // 2. Primary Type (Theater / Event)
+                let warnaBadgePrimary = (tipeJadwal.toUpperCase() === 'EVENT') ? '#004080' : warnaUtama;
+                badgesHtml += `<span class="badge-tipe-jadwal" style="background-color: ${warnaBadgePrimary};">${tipeJadwal.toUpperCase()}</span>`;
+
+                // 3. Secondary Type (Ramadan / OFC / Offair)
+                if (tipeSekunder) {
+                    let warnaBadgeSecondary = '#666'; // Default abu-abu
+                    if (tipeSekunder.toUpperCase() === 'RAMADAN' || tipeSekunder.toUpperCase() === 'RAMADHAN') warnaBadgeSecondary = '#28a745';
+                    else if (tipeSekunder.toUpperCase() === 'OFC') warnaBadgeSecondary = '#b8860b';
+                    else if (tipeSekunder.toUpperCase() === 'OFFAIR') warnaBadgeSecondary = '#004080';
+                    
+                    badgesHtml += `<span class="badge-tipe-jadwal" style="background-color: ${warnaBadgeSecondary};">${tipeSekunder.toUpperCase()}</span>`;
+                }
+
+                // 4. Special Event (STS / Grad) - Otomatis terdeteksi dari member!
+                let isSTS = false;
+                let isGrad = false;
+                
+                if (jadwal.performing_members && jadwal.performing_members.length > 0) {
+                    isSTS = jadwal.performing_members.some(pm => pm.is_birthday === true);
+                    isGrad = jadwal.performing_members.some(pm => pm.is_graduation === true);
+                }
+                
+                if (isSTS || judulLower.includes('seitansai') || judulLower.includes('birthday') || judulLower.includes('ulang tahun')) {
+                    badgesHtml += `<span class="badge-tipe-jadwal" style="background-color: #4caf50;">BIRTHDAY</span>`;
+                }
+                if (isGrad || judulLower.includes('graduation') || judulLower.includes('last show') || judulLower.includes('kelulusan')) {
+                    badgesHtml += `<span class="badge-tipe-jadwal" style="background-color: #e53935;">GRADUATION</span>`;
                 }
 
                 const div = document.createElement('div');
                 div.className = 'list-item';
-                div.style.borderLeftColor = warnaTeksJudul; 
+                div.style.borderLeftColor = warnaUtama; 
                 div.style.padding = '15px'; 
-                div.onclick = () => muatDetailJadwal(jadwal.id, jadwal.judul_show, formatWaktu, jadwal.lokasi, tipeJadwal, jadwal.foto_event, tipeSekunder);
+                div.onclick = () => muatDetailJadwal(jadwal.id, judul, formatTanggal + ' | Pukul ' + formatJam, jadwal.lokasi, tipeJadwal, jadwal.foto_event, tipeSekunder);
                 
                 div.innerHTML = `
                     <div>
-                        <div class="list-subtitle" style="font-size: 0.85em;">
-                            <span class="badge-tipe-jadwal ${classBadgeTipe}" style="font-size: 0.9em; padding: 2px 8px;">${teksBadge}</span>
-                            ${formatWaktu}
+                        <div class="list-subtitle" style="margin-bottom: 5px; flex-wrap: wrap; gap: 3px;">
+                            ${badgesHtml}
                         </div>
-                        <h3 class="list-title" style="color: ${warnaTeksJudul}; font-size: 1.1em; margin-top: 5px;">${jadwal.judul_show}</h3>
+                        <h3 class="list-title" style="color: ${warnaUtama}; font-size: 1.2em; margin: 0 0 5px 0;">${judul}</h3>
+                        <div style="font-size: 0.85em; color: #666; font-weight: bold;">&#128197; ${formatTanggal} | Pukul ${formatJam}</div>
                     </div>
-                    <div style="color: ${warnaTeksJudul}; font-size: 20px;">&#10140;</div>
+                    <div style="color: ${warnaUtama}; font-size: 24px;">&#10140;</div>
                 `;
                 container.appendChild(div);
             });
@@ -987,7 +1065,6 @@
 
                 validMembersData.forEach(item => {
                     const member = item.members;
-                    // Kembalikan ke nama panggilan untuk Performing Members
                     const namaPendek = member.nama_panggilan || member.nama.split(' ')[0];
                     
                     const card = document.createElement('div');
