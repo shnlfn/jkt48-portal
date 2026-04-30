@@ -127,6 +127,27 @@ function renderJadwalKeLayar() {
 
     if (dataTampil.length === 0) return container.innerHTML = `<p style="text-align:center;">Belum ada jadwal/event untuk bulan ini.</p>`;
 
+    const thnFilter = parseInt(document.getElementById('filter-tahun').value);
+    const blnFilter = parseInt(document.getElementById('filter-bulan').value);
+    const now = new Date();
+    const isCurrentMonth = (now.getFullYear() === thnFilter && (now.getMonth() + 1) === blnFilter);
+
+    if (isCurrentMonth) {
+        const jadwalMendatang = [];
+        const jadwalTerlewat = [];
+        
+        dataTampil.forEach(j => {
+            const tglJadwal = new Date(j.tanggal_waktu);
+            if (tglJadwal >= now) {
+                jadwalMendatang.push(j);
+            } else {
+                jadwalTerlewat.push(j);
+            }
+        });
+        
+        dataTampil = [...jadwalMendatang, ...jadwalTerlewat];
+    }
+
     dataTampil.forEach(jadwal => {
         const tgl = new Date(jadwal.tanggal_waktu);
         const formatTanggal = tgl.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -174,7 +195,6 @@ function renderJadwalKeLayar() {
             isGrad = jadwal.performing_members.some(pm => pm.is_graduation === true);
         }
         
-        // --- LOGIKA BADGE SHONICHI & SENSHURAKU ---
         if (jadwal.is_shonichi) badgesHtml += `<span class="badge-tipe-jadwal" style="background-color: #00bcd4;">SHONICHI</span>`;
         if (jadwal.is_senshuraku || judulLower.includes('senshuraku') || judulLower.includes('last show')) badgesHtml += `<span class="badge-tipe-jadwal" style="background-color: #673ab7;">SENSHURAKU</span>`;
         
@@ -185,6 +205,12 @@ function renderJadwalKeLayar() {
         div.className = 'list-item';
         div.style.borderLeftColor = warnaUtama; 
         div.style.padding = '15px'; 
+        
+        if (isCurrentMonth && tgl < now) {
+            div.style.opacity = '0.6';
+            div.style.backgroundColor = '#f8f9fa';
+        }
+
         div.onclick = () => muatDetailJadwal(jadwal.id, judul, formatTanggal + ' | Pukul ' + formatJam, jadwal.lokasi, tipeJadwal, jadwal.foto_event, tipeSekunder);
         
         div.innerHTML = `
@@ -199,13 +225,18 @@ function renderJadwalKeLayar() {
     });
 }
 
+// =======================================================
+// FUNGSI UTAMA: LOAD DETAIL JADWAL (DENGAN TEMA DINAMIS)
+// =======================================================
 async function muatDetailJadwal(scheduleId, judul, waktu, lokasi, tipeJadwal, fotoEvent, tipeSekunder) {
     currentScheduleData = {scheduleId, judul, waktu, lokasi, tipeJadwal, fotoEvent, tipeSekunder};
     bukaHalaman('view-schedule-detail');
     
     if (typeof siapkanAdminPanel === "function") siapkanAdminPanel(scheduleId);
     
-    let warnaTema = '#d81b60'; 
+    let teamLower = judul.toLowerCase();
+    let warnaTema = getTeamColor(teamLower) || '#d81b60'; 
+    
     let tipeJudulFoto = 'Foto Teater';
     const elTeksMember = document.getElementById('teks-performing-members');
     elTeksMember.innerText = 'Performing Members'; 
@@ -217,22 +248,36 @@ async function muatDetailJadwal(scheduleId, judul, waktu, lokasi, tipeJadwal, fo
         else warnaTema = '#004080'; 
     }
 
-    document.getElementById('detail-judul-jadwal').innerText = judul;
-    document.getElementById('detail-judul-jadwal').style.color = warnaTema;
-    document.getElementById('detail-waktu-jadwal').innerText = waktu;
-    document.getElementById('detail-lokasi-jadwal').innerHTML = `&#128205; ${lokasi || 'JKT48 Theater, fX Sudirman'}`;
-    document.getElementById('detail-lokasi-jadwal').style.color = warnaTema;
-    elTeksMember.style.color = warnaTema;
-    document.getElementById('teks-event-setlist').style.color = warnaTema;
-    document.getElementById('judul-foto-dinamis').innerText = tipeJudulFoto;
-    document.getElementById('judul-foto-dinamis').style.color = warnaTema;
+    const elJudul = document.getElementById('detail-judul-jadwal');
+    const elLokasi = document.getElementById('detail-lokasi-jadwal');
+    const elWaktu = document.getElementById('detail-waktu-jadwal');
+    const elFotoInfo = document.getElementById('judul-foto-dinamis');
+    const elTeksLagu = document.getElementById('teks-event-setlist');
 
-    if (fotoEvent && fotoEvent.trim() !== '') {
-        document.getElementById('detail-foto-event').src = fotoEvent;
-        document.getElementById('area-foto-event').style.display = 'block';
+    elJudul.innerText = judul;
+    elJudul.style.color = warnaTema;
+
+    elWaktu.innerText = waktu;
+
+    elLokasi.innerHTML = `&#128205; ${lokasi || 'JKT48 Theater, fX Sudirman'}`;
+    elLokasi.style.color = warnaTema;
+
+    elTeksMember.style.color = warnaTema;
+    if(elTeksLagu) elTeksLagu.style.color = warnaTema;
+    
+    if(elFotoInfo) {
+        elFotoInfo.innerText = tipeJudulFoto;
+        elFotoInfo.style.color = warnaTema;
+    }
+
+    const areaFoto = document.getElementById('area-foto-event');
+    const imgFoto = document.getElementById('detail-foto-event');
+    if (fotoEvent && fotoEvent.trim() !== '' && fotoEvent !== 'null') {
+        areaFoto.style.display = 'block';
+        imgFoto.src = fotoEvent;
     } else {
-        document.getElementById('area-foto-event').style.display = 'none';
-        document.getElementById('detail-foto-event').src = '';
+        areaFoto.style.display = 'none';
+        imgFoto.src = '';
     }
     
     const container = document.getElementById('list-performing-members');
@@ -246,9 +291,12 @@ async function muatDetailJadwal(scheduleId, judul, waktu, lokasi, tipeJadwal, fo
         .order('is_center', { ascending: false });
 
     loading.style.display = 'none';
-    if (error) container.innerHTML = `<p style="color:red;">Gagal memuat member: ${error.message}</p>`;
-    else if (data.length === 0) container.innerHTML = `<p style="text-align:center; color:#999; width:100%;">Member yang tampil belum diumumkan.</p>`;
-    else {
+
+    if (error) {
+        container.innerHTML = `<p style="grid-column: 1/-1; text-align:center; color:red;">Gagal memuat member: ${error.message}</p>`;
+    } else if (!data || data.length === 0) {
+        container.innerHTML = `<p style="grid-column: 1/-1; text-align:center; color:#999; font-style:italic;">Member yang tampil belum diumumkan.</p>`;
+    } else {
         let validMembersData = data.filter(item => item && item.members);
 
         if (tipeJadwal !== 'Theater') {
@@ -286,27 +334,51 @@ async function muatDetailJadwal(scheduleId, judul, waktu, lokasi, tipeJadwal, fo
             if (item.is_shonichi) activeEvents.push({ name: 'SHONICHI', icon: '&#10024;', color1: '#00bcd4', color2: '#00838f', textColor: '#00838f' });
 
             let floatingIcons = ''; let floatBadge = ''; let h3Style = '';
-            
             let warnaTimTampil = getTeamColor(member.team) || warnaTema;
 
-            if (activeEvents.length === 1) {
-                const ev = activeEvents[0];
-                floatingIcons = `<div class="icon-single">${ev.icon}</div>`;
-                floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, ${ev.color1}, ${ev.color2});">${ev.name}</div>`;
-                h3Style = `color: ${ev.textColor};`;
-            } else if (activeEvents.length >= 2) {
-                const ev1 = activeEvents[0]; const ev2 = activeEvents[1];
-                floatingIcons = `<div class="icon-dual-left">${ev1.icon}</div><div class="icon-dual-right">${ev2.icon}</div>`;
-                const badgeText = activeEvents.map(e => e.name).join(' &bull; ');
-                floatBadge = `<div class="badge-single" style="background: linear-gradient(135deg, ${ev1.color1}, ${ev2.color1});">${badgeText}</div>`;
-                h3Style = `color: ${ev.textColor};`;
-            } else { h3Style = `color: ${warnaTimTampil};`; }
+            // --- PERBAIKAN UI: BADGE TUMPUK (STACKED) AGAR TIDAK LEBAR ---
+            if (activeEvents.length > 0) {
+                // Konfigurasi icon melayang di atas
+                if (activeEvents.length === 1) {
+                    floatingIcons = `<div class="icon-single" style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); font-size:1.4em; z-index:3; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));">${activeEvents[0].icon}</div>`;
+                    h3Style = `color: ${activeEvents[0].textColor};`;
+                } else {
+                    floatingIcons = `
+                        <div style="position:absolute; top:-8px; left:-8px; font-size:1.3em; z-index:3; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));">${activeEvents[0].icon}</div>
+                        <div style="position:absolute; top:-8px; right:-8px; font-size:1.3em; z-index:3; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));">${activeEvents[1].icon}</div>
+                    `;
+                    h3Style = `color: ${activeEvents[0].textColor};`;
+                }
 
-            let imgStyle = `border: 3px solid ${activeEvents.length >= 1 ? activeEvents[0].color1 : warnaTimTampil}; box-shadow: 0 0 10px ${activeEvents.length >= 1 ? activeEvents[0].color1 : warnaTimTampil}99;`;
-            if (activeEvents.length >= 2) imgStyle = `border: 3px solid transparent; background: linear-gradient(white, white) padding-box, linear-gradient(135deg, ${activeEvents[0].color1}, ${activeEvents[1].color1}) border-box; box-shadow: 0 0 10px ${activeEvents[0].color1}99;`;
+                // Konfigurasi tumpukan badge rapi di bawah
+                floatBadge = `<div style="position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 3px; z-index: 4; align-items: center; width: max-content;">`;
+                activeEvents.forEach(ev => {
+                    floatBadge += `<span style="background: linear-gradient(135deg, ${ev.color1}, ${ev.color2}); font-size: 0.55em; padding: 2px 6px; border-radius: 4px; color: white; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); border: 1px solid white; white-space: nowrap; line-height: 1;">${ev.name}</span>`;
+                });
+                floatBadge += `</div>`;
+            } else { 
+                h3Style = `color: ${warnaTimTampil};`; 
+            }
+
+            let imgStyle = `border: 3px solid ${activeEvents.length >= 1 ? activeEvents[0].color1 : warnaTimTampil}; box-shadow: 0 0 10px ${activeEvents.length >= 1 ? activeEvents[0].color1 : warnaTimTampil}99; width: 80px; height: 80px; object-fit: cover; border-radius: 50%;`;
+            
+            if (activeEvents.length >= 2) {
+                imgStyle = `border: 3px solid transparent; background: linear-gradient(white, white) padding-box, linear-gradient(135deg, ${activeEvents[0].color1}, ${activeEvents[1].color1}) border-box; box-shadow: 0 0 10px ${activeEvents[0].color1}99; width: 80px; height: 80px; object-fit: cover; border-radius: 50%;`;
+            }
 
             const imgHtml = generateMemberImageHtml(member, judul, null, null, imgStyle);
-            card.innerHTML = `<div style="position:relative; width:100%; display:flex; justify-content:center;">${floatingIcons}${imgHtml}${floatBadge}</div><h3 style="${h3Style}" title="${member.nama}">${namaPendek}</h3>`;
+            
+            // Kalkulasi jarak dorong ke bawah agar badge yang menumpuk tidak menutupi nama member
+            let containerMarginBottom = activeEvents.length > 0 ? (activeEvents.length * 14) + 'px' : '0px';
+
+            card.innerHTML = `
+                <div style="position:relative; width:80px; height:80px; margin:0 auto; margin-bottom: ${containerMarginBottom};">
+                    ${floatingIcons}
+                    ${imgHtml}
+                    ${floatBadge}
+                </div>
+                <h3 style="${h3Style} margin: 5px 0 0 0; font-size:0.85em; font-weight:bold;" title="${member.nama}">${namaPendek}</h3>
+            `;
             container.appendChild(card);
         });
     }
@@ -315,56 +387,62 @@ async function muatDetailJadwal(scheduleId, judul, waktu, lokasi, tipeJadwal, fo
     const containerSongs = document.getElementById('list-schedule-songs');
     const loadingSongs = document.getElementById('loading-schedule-songs');
     
-    containerSongs.innerHTML = ''; areaSetlist.style.display = 'block'; loadingSongs.style.display = 'block';
+    if (tipeJadwal !== 'Theater') {
+        containerSongs.innerHTML = ''; areaSetlist.style.display = 'block'; loadingSongs.style.display = 'block';
 
-    const { data: dataSongs, error: errSongs } = await supabaseClient
-        .from('schedule_songs')
-        .select('track_number, dibawakan_oleh, center1:members!center_id(id, nama_panggilan), center2:members!center_id_2(id, nama_panggilan), songs(id, judul_lagu, tipe_lagu, tipe_dibawakan)')
-        .eq('schedule_id', scheduleId)
-        .order('track_number', { ascending: true });
+        const { data: dataSongs, error: errSongs } = await supabaseClient
+            .from('schedule_songs')
+            .select('track_number, dibawakan_oleh, center1:members!center_id(id, nama_panggilan), center2:members!center_id_2(id, nama_panggilan), songs(id, judul_lagu, tipe_lagu, tipe_dibawakan)')
+            .eq('schedule_id', scheduleId)
+            .order('track_number', { ascending: true });
 
-    loadingSongs.style.display = 'none';
-    if (errSongs || !dataSongs || dataSongs.length === 0) {
-        areaSetlist.style.display = 'none'; 
+        loadingSongs.style.display = 'none';
+        if (errSongs || !dataSongs || dataSongs.length === 0) {
+            areaSetlist.style.display = 'none'; 
+        } else {
+            dataSongs.forEach((item, index) => {
+                if (!item.songs) return; 
+                const lagu = item.songs;
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.style.borderLeftColor = warnaTema;
+                div.onclick = () => { if(typeof muatDetailLagu === 'function') muatDetailLagu(lagu.id, 'view-schedule-detail'); };
+                
+                const tampilanTrack = item.track_number ? `Track ${item.track_number}` : `Track ${index + 1}`;
+                const badgeTipeLagu = lagu.tipe_lagu ? `<span class="badge-tipe-lagu" style="background-color:${warnaTema};">${lagu.tipe_lagu}</span>` : '';
+                
+                const teksDibawakan = item.dibawakan_oleh ? item.dibawakan_oleh : (lagu.tipe_dibawakan ? lagu.tipe_dibawakan : '');
+                const isInstrumentalLagu = lagu.tipe_lagu && lagu.tipe_lagu.toLowerCase() === 'instrumental';
+                let badgeTipeDibawakan = '';
+                if (!isInstrumentalLagu && teksDibawakan) badgeTipeDibawakan = `<span class="badge-tipe-bawa">${teksDibawakan}</span>`;
+                
+                let namaCenter = '';
+                if (item.center1 && item.center1.nama_panggilan) namaCenter += item.center1.nama_panggilan;
+                if (item.center2 && item.center2.nama_panggilan) namaCenter += ' & ' + item.center2.nama_panggilan;
+                const textCenter = namaCenter !== '' ? `<div style="margin-top: 5px; font-weight: bold; font-size: 0.85em; color: #d4af37;">&#128081; ${namaCenter}</div>` : '';
+
+                div.innerHTML = `
+                    <div>
+                        <div class="list-subtitle" style="margin-bottom: 5px;">&#127925; ${tampilanTrack} ${badgeTipeLagu}${badgeTipeDibawakan}</div>
+                        <h3 class="list-title" style="color:${warnaTema}; margin-top: 2px;">${lagu.judul_lagu}</h3>
+                        ${textCenter}
+                    </div>
+                    <div style="color: ${warnaTema}; font-size: 24px;">&#10140;</div>
+                `;
+                containerSongs.appendChild(div);
+            });
+        }
     } else {
-        dataSongs.forEach((item, index) => {
-            if (!item.songs) return; 
-            const lagu = item.songs;
-            const div = document.createElement('div');
-            div.className = 'list-item';
-            div.style.borderLeftColor = warnaTema;
-            div.onclick = () => { if(typeof muatDetailLagu === 'function') muatDetailLagu(lagu.id, 'view-schedule-detail'); };
-            
-            const tampilanTrack = item.track_number ? `Track ${item.track_number}` : `Track ${index + 1}`;
-            const badgeTipeLagu = lagu.tipe_lagu ? `<span class="badge-tipe-lagu" style="background-color:${warnaTema};">${lagu.tipe_lagu}</span>` : '';
-            
-            const teksDibawakan = item.dibawakan_oleh ? item.dibawakan_oleh : (lagu.tipe_dibawakan ? lagu.tipe_dibawakan : '');
-            const isInstrumentalLagu = lagu.tipe_lagu && lagu.tipe_lagu.toLowerCase() === 'instrumental';
-            let badgeTipeDibawakan = '';
-            if (!isInstrumentalLagu && teksDibawakan) badgeTipeDibawakan = `<span class="badge-tipe-bawa">${teksDibawakan}</span>`;
-            
-            let namaCenter = '';
-            if (item.center1 && item.center1.nama_panggilan) namaCenter += item.center1.nama_panggilan;
-            if (item.center2 && item.center2.nama_panggilan) namaCenter += ' & ' + item.center2.nama_panggilan;
-            const textCenter = namaCenter !== '' ? `<div style="margin-top: 5px; font-weight: bold; font-size: 0.85em; color: #d4af37;">&#128081; ${namaCenter}</div>` : '';
-
-            div.innerHTML = `
-                <div>
-                    <div class="list-subtitle" style="margin-bottom: 5px;">&#127925; ${tampilanTrack} ${badgeTipeLagu}${badgeTipeDibawakan}</div>
-                    <h3 class="list-title" style="color:${warnaTema}; margin-top: 2px;">${lagu.judul_lagu}</h3>
-                    ${textCenter}
-                </div>
-                <div style="color: ${warnaTema}; font-size: 24px;">&#10140;</div>
-            `;
-            containerSongs.appendChild(div);
-        });
+        areaSetlist.style.display = 'none';
     }
 }
 
 // ============================================================================
-// --- ADMIN LOKAL PANEL ---
+// --- ADMIN LOKAL PANEL DENGAN BULK ACTION (NEW) ---
 // ============================================================================
 let currentAdminScheduleId = null;
+window.allMembersAdminCache = [];
+window.stagedAdminMembers = []; // Menyimpan antrean member yang akan ditambahkan
 
 function isLocalhost() {
     return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
@@ -379,37 +457,29 @@ function siapkanAdminPanel(scheduleId) {
     else { toggleBtn.style.display = 'none'; adminArea.style.display = 'none'; }
 }
 
-async function toggleAdminLineup() {
+window.toggleAdminLineup = async function() {
     const adminArea = document.getElementById('admin-lineup-area');
     if (adminArea.style.display === 'none') { 
         adminArea.style.display = 'block'; 
-        await muatDataAdminJadwal(); // Memuat status jadwal (Shonichi/Senshuraku & Edit Team)
-        await muatDataAdminLineup(); // Memuat status lineup member
+        
+        // Membersihkan layout HTML jadul dari index.html & Menerapkan layout dinamis baru
+        adminArea.innerHTML = `
+            <h3 style="color: #d81b60; text-align: center; margin-top: 0;">Manajemen Lineup Manual</h3>
+            <div id="admin-status-jadwal" style="background:#e2e8f0; padding:15px; border-radius:5px; margin-bottom:15px;"></div>
+            <div id="admin-manage-wrapper"><p style="text-align:center;">Mempersiapkan alat...</p></div>
+        `;
+        
+        await muatDataAdminJadwal(); 
+        await muatDataAdminLineup(); 
     } else {
         adminArea.style.display = 'none';
     }
 }
 
-// --- FITUR BARU: MANAJEMEN STATUS JADWAL & EDIT TEAM ---
 async function muatDataAdminJadwal() {
-    const adminArea = document.getElementById('admin-lineup-area');
     let containerJadwal = document.getElementById('admin-status-jadwal');
-    
-    // Injeksi kotak kontrol jika belum ada
-    if (!containerJadwal) {
-        containerJadwal = document.createElement('div');
-        containerJadwal.id = 'admin-status-jadwal';
-        containerJadwal.style.marginBottom = '20px';
-        containerJadwal.style.padding = '15px';
-        containerJadwal.style.backgroundColor = '#f1f5f9';
-        containerJadwal.style.borderRadius = '8px';
-        containerJadwal.style.border = '1px solid #cbd5e1';
-        adminArea.insertBefore(containerJadwal, adminArea.firstChild);
-    }
-
     containerJadwal.innerHTML = '<p style="font-size:0.85em; color:#666;">Memuat status jadwal...</p>';
 
-    // Mengambil data status jadwal saat ini dari database
     const { data, error } = await supabaseClient
         .from('theater_schedules')
         .select('is_shonichi, is_senshuraku, team')
@@ -420,7 +490,6 @@ async function muatDataAdminJadwal() {
         const cShonichi = data.is_shonichi ? 'checked' : '';
         const cSenshuraku = data.is_senshuraku ? 'checked' : '';
         
-        // Opsi Dropdown Tim Penyaji
         const teamOptions = ['JKT48', 'Team J', 'Team KIII', 'Team T', 'Trainee', 'Academy Class A', 'Team Love', 'Team Dream', 'Team Passion'];
         let selTeam = `<select onchange="adminUpdateTextJadwal('team', this.value)" style="padding:6px 12px; border-radius:4px; border: 1px solid #d81b60; font-weight:bold; color:#333; outline:none;">`;
         teamOptions.forEach(t => {
@@ -435,7 +504,7 @@ async function muatDataAdminJadwal() {
             <div style="margin-bottom:20px;">
                 <label style="font-weight:bold; color:#475569; display:inline-block; margin-right:10px;">Tim Penyaji Show/Event ini:</label>
                 ${selTeam}
-                <p style="margin:5px 0 0 0; font-size:0.8em; color:#888;">(Ubah ini jika jadwal nyasar ke tim yang salah, misalnya show "Kira Kira Girls" masuk ke JKT48 alih-alih Trainee)</p>
+                <p style="margin:5px 0 0 0; font-size:0.8em; color:#888;">(Ubah ini jika jadwal nyasar ke tim yang salah)</p>
             </div>
 
             <div style="display:flex; gap:25px; flex-wrap:wrap; font-size:0.95em;">
@@ -448,50 +517,31 @@ async function muatDataAdminJadwal() {
                     Senshuraku (Last Show)
                 </label>
             </div>
-            <p style="font-size:0.8em; color:#888; margin-top:10px; margin-bottom:0; font-style:italic;">*Perubahan centang akan langsung tersimpan dan merubah badge di halaman depan.</p>
         `;
     } else {
         containerJadwal.innerHTML = '<p style="color:red; font-size:0.85em;">Gagal memuat status jadwal.</p>';
     }
 }
 
-async function adminUpdateStatusJadwal(field, isChecked) {
-    const { error } = await supabaseClient.from('theater_schedules')
-        .update({ [field]: isChecked })
-        .eq('id', currentAdminScheduleId);
-    
+window.adminUpdateStatusJadwal = async function(field, isChecked) {
+    const { error } = await supabaseClient.from('theater_schedules').update({ [field]: isChecked }).eq('id', currentAdminScheduleId);
     if (error) alert('Gagal update status jadwal: ' + error.message);
-    else {
-        console.log(`Status jadwal [${field}] diupdate menjadi: ${isChecked}`);
-        if (typeof terapkanFilterJadwal === 'function') terapkanFilterJadwal();
-    }
+    else if (typeof terapkanFilterJadwal === 'function') terapkanFilterJadwal();
 }
 
-// Fungsi Khusus untuk Mengubah Teks (Misal nama Tim)
-async function adminUpdateTextJadwal(field, valueText) {
-    const { error } = await supabaseClient.from('theater_schedules')
-        .update({ [field]: valueText })
-        .eq('id', currentAdminScheduleId);
-        
+window.adminUpdateTextJadwal = async function(field, valueText) {
+    const { error } = await supabaseClient.from('theater_schedules').update({ [field]: valueText }).eq('id', currentAdminScheduleId);
     if(error) alert('Gagal memindahkan Tim: ' + error.message);
-    else {
-        alert(`SUKSES! Jadwal ini sekarang resmi dimiliki oleh ${valueText}`);
-        if (typeof terapkanFilterJadwal === 'function') terapkanFilterJadwal();
-    }
+    else { alert(`SUKSES! Jadwal ini sekarang resmi dimiliki oleh ${valueText}`); if (typeof terapkanFilterJadwal === 'function') terapkanFilterJadwal(); }
 }
-// -----------------------------------------------------------------
 
 async function muatDataAdminLineup() {
-    const tbody = document.getElementById('admin-table-body');
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:10px;">Memuat data...</td></tr>';
+    const wrapper = document.getElementById('admin-manage-wrapper');
+    wrapper.innerHTML = '<p style="text-align:center;">Memuat data member & lineup...</p>';
 
-    const selectEl = document.getElementById('admin-select-member');
-    if (selectEl.options.length <= 1) {
-        const { data: allMembers } = await supabaseClient.from('members').select('id, nama').order('nama');
-        if (allMembers) {
-            selectEl.innerHTML = '<option value="">-- Pilih Member untuk Ditambahkan --</option>';
-            allMembers.forEach(m => selectEl.innerHTML += `<option value="${m.id}">${m.nama}</option>`);
-        }
+    if (window.allMembersAdminCache.length === 0) {
+        const { data: allMem } = await supabaseClient.from('members').select('id, nama').order('nama');
+        if (allMem) window.allMembersAdminCache = allMem;
     }
 
     const { data: currentLineup } = await supabaseClient
@@ -500,53 +550,192 @@ async function muatDataAdminLineup() {
         .eq('schedule_id', currentAdminScheduleId)
         .order('blocking', { ascending: true, nullsFirst: false });
 
-    tbody.innerHTML = '';
+    let dlOptions = '';
+    window.allMembersAdminCache.forEach(m => dlOptions += `<option value="${m.nama}">`);
+
+    let html = `
+        <div style="margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
+            <h4 style="margin-top:0; color:#333; margin-bottom:10px;">Tambah Member ke Lineup (Bisa Banyak Sekaligus)</h4>
+            <div style="display:flex; gap:10px;">
+                <input list="dl-admin-members" id="input-admin-member" placeholder="Ketik nama member..." style="flex:1; padding:8px; border:1px solid #ccc; border-radius:4px;" onkeydown="if(event.key === 'Enter') adminStageMember()">
+                <datalist id="dl-admin-members">${dlOptions}</datalist>
+                <button onclick="adminStageMember()" style="background:#004080; color:white; border:none; padding:8px 15px; border-radius:4px; font-weight:bold; cursor:pointer;">+ Masukkan ke Antrean</button>
+            </div>
+            <div id="staged-members-container" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;"></div>
+            <button id="btn-save-staged" onclick="adminSimpanStagedMembers()" style="display:none; margin-top:15px; width:100%; background:#28a745; color:white; border:none; padding:10px; border-radius:5px; font-weight:bold; cursor:pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">Simpan Antrean ke Database</button>
+        </div>
+
+        <div style="overflow-x: auto; background: #fff; border: 1px solid #ddd; border-radius: 8px;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9em;">
+                <thead>
+                    <tr style="background: #fce4ec; border-bottom: 2px solid #d81b60;">
+                        <th style="padding: 10px;">Nama Member</th>
+                        <th style="padding: 10px; text-align: center;" title="Center">&#128081; Center</th>
+                        <th style="padding: 10px; text-align: center;" title="Shonichi">&#10024; Shonichi</th>
+                        <th style="padding: 10px; text-align: center;" title="Seitansai">&#127874; STS</th>
+                        <th style="padding: 10px; text-align: center;" title="Last Show">&#127800; Grad</th>
+                        <th style="padding: 10px; text-align: center;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-table-body">
+    `;
+
+    if (!currentLineup || currentLineup.length === 0) {
+        html += '<tr><td colspan="6" style="text-align:center; padding:15px; color:#888;">Belum ada member di lineup ini.</td></tr>';
+    } else {
+        currentLineup.forEach(item => {
+            const cCenter = item.is_center ? 'checked' : '';
+            const cShonichi = item.is_shonichi ? 'checked' : '';
+            const cSTS = item.is_birthday ? 'checked' : '';
+            const cGrad = item.is_graduation ? 'checked' : '';
+
+            html += `
+                <tr style="border-bottom: 1px solid #eee;" data-id="${item.id}" data-member-id="${item.member_id}">
+                    <td style="padding: 10px; font-weight: bold; color:#444;">${item.members.nama}</td>
+                    <td style="padding: 10px; text-align: center;"><input type="checkbox" style="transform: scale(1.3); cursor:pointer;" class="cb-center" ${cCenter}></td>
+                    <td style="padding: 10px; text-align: center;"><input type="checkbox" style="transform: scale(1.3); cursor:pointer;" class="cb-shonichi" ${cShonichi}></td>
+                    <td style="padding: 10px; text-align: center;"><input type="checkbox" style="transform: scale(1.3); cursor:pointer;" class="cb-sts" ${cSTS}></td>
+                    <td style="padding: 10px; text-align: center;"><input type="checkbox" style="transform: scale(1.3); cursor:pointer;" class="cb-grad" ${cGrad}></td>
+                    <td style="padding: 10px; text-align: center;">
+                        <button onclick="adminHapusMember('${item.member_id}')" style="background:#e53935; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.8em;">Keluarkan</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    html += `</tbody></table></div>`;
+
+    if (currentLineup && currentLineup.length > 0) {
+        html += `<button onclick="adminSimpanPerubahanLineup()" style="margin-top:15px; width:100%; background:#ff9800; color:white; border:none; padding:10px; border-radius:5px; font-weight:bold; cursor:pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">Simpan Semua Centang Sekaligus</button>`;
+    }
+
+    wrapper.innerHTML = html;
+    window.stagedAdminMembers = []; // Kosongkan antrean
+    renderStagedMembers();
+}
+
+// --- LOGIKA QUEUE / ANTREAN NAMA BARU ---
+window.adminStageMember = function() {
+    const input = document.getElementById('input-admin-member');
+    const namaRaw = input.value.trim().toLowerCase();
+    if (!namaRaw) return;
+
+    const memberObj = window.allMembersAdminCache.find(m => m.nama.toLowerCase() === namaRaw);
+    if (!memberObj) {
+        alert('Nama member tidak ditemukan! Pilih atau eja dengan benar dari daftar yang tersedia.');
+        return;
+    }
+
+    // Cek duplikasi di antrean
+    if (window.stagedAdminMembers.some(m => m.id === memberObj.id)) {
+        input.value = ''; return;
+    }
+
+    // Cek jika member sudah ada di tabel (mencegah error double entry ke Supabase)
+    const existingTableRows = document.querySelectorAll('#admin-table-body tr[data-member-id]');
+    for (let tr of existingTableRows) {
+        if (tr.getAttribute('data-member-id') === memberObj.id) {
+            alert(`${memberObj.nama} sudah ada di dalam lineup saat ini!`);
+            input.value = ''; return;
+        }
+    }
+
+    window.stagedAdminMembers.push(memberObj);
+    input.value = '';
+    renderStagedMembers();
+};
+
+window.adminRemoveStagedMember = function(id) {
+    window.stagedAdminMembers = window.stagedAdminMembers.filter(m => m.id !== id);
+    renderStagedMembers();
+};
+
+function renderStagedMembers() {
+    const container = document.getElementById('staged-members-container');
+    const btnSave = document.getElementById('btn-save-staged');
     
-    if (!currentLineup || currentLineup.length === 0) return tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:10px; color:#888;">Belum ada member di lineup ini.</td></tr>';
+    container.innerHTML = '';
+    if (window.stagedAdminMembers.length > 0) {
+        window.stagedAdminMembers.forEach(m => {
+            container.innerHTML += `
+                <div style="background:#0ea5e9; color:white; padding:5px 12px; border-radius:15px; font-size:0.85em; display:flex; align-items:center; gap:8px; font-weight:bold;">
+                    ${m.nama}
+                    <span onclick="adminRemoveStagedMember('${m.id}')" style="background:white; color:#0ea5e9; border-radius:50%; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; font-weight:bold; font-size:12px;">&times;</span>
+                </div>
+            `;
+        });
+        btnSave.style.display = 'block';
+        btnSave.innerText = `Simpan ${window.stagedAdminMembers.length} Member ke Database`;
+    } else {
+        btnSave.style.display = 'none';
+    }
+}
 
-    currentLineup.forEach(item => {
-        const cCenter = item.is_center ? 'checked' : '';
-        const cShonichi = item.is_shonichi ? 'checked' : '';
-        const cSTS = item.is_birthday ? 'checked' : '';
-        const cGrad = item.is_graduation ? 'checked' : '';
-        const onChangeAction = (field) => `adminUpdateStatus('${item.member_id}', '${field}', this.checked)`;
+window.adminSimpanStagedMembers = async function() {
+    if (window.stagedAdminMembers.length === 0) return;
+    
+    const inserts = window.stagedAdminMembers.map(m => ({
+        schedule_id: currentAdminScheduleId,
+        member_id: m.id,
+        blocking: 99
+    }));
 
-        tbody.innerHTML += `
-            <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 10px; font-weight: bold;">${item.members.nama}</td>
-                <td style="padding: 10px; text-align: center;"><input type="checkbox" ${cCenter} onchange="${onChangeAction('is_center')}"></td>
-                <td style="padding: 10px; text-align: center;"><input type="checkbox" ${cShonichi} onchange="${onChangeAction('is_shonichi')}"></td>
-                <td style="padding: 10px; text-align: center;"><input type="checkbox" ${cSTS} onchange="${onChangeAction('is_birthday')}"></td>
-                <td style="padding: 10px; text-align: center;"><input type="checkbox" ${cGrad} onchange="${onChangeAction('is_graduation')}"></td>
-                <td style="padding: 10px; text-align: center;">
-                    <button onclick="adminHapusMember('${item.member_id}')" style="background:#e53935; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.8em;">Hapus</button>
-                </td>
-            </tr>
-        `;
+    const { error } = await supabaseClient.from('performing_members').insert(inserts);
+    
+    if (error) {
+        alert('Gagal menyimpan member baru: ' + error.message);
+    } else {
+        alert(`${inserts.length} Member berhasil dimasukkan ke formasi!`);
+        await muatDataAdminLineup();
+        refreshDetailSaatIni();
+    }
+};
+
+// --- LOGIKA SIMPAN CENTANG MASSAL ---
+window.adminSimpanPerubahanLineup = async function() {
+    const rows = document.querySelectorAll('#admin-table-body tr[data-id]');
+    const updates = [];
+    
+    rows.forEach(tr => {
+        const id = tr.getAttribute('data-id');
+        const memberId = tr.getAttribute('data-member-id');
+        if(!id || !memberId) return;
+
+        const isCenter = tr.querySelector('.cb-center').checked;
+        const isShonichi = tr.querySelector('.cb-shonichi').checked;
+        const isBirthday = tr.querySelector('.cb-sts').checked;
+        const isGraduation = tr.querySelector('.cb-grad').checked;
+
+        updates.push({
+            id: id,
+            schedule_id: currentAdminScheduleId,
+            member_id: memberId,
+            is_center: isCenter,
+            is_shonichi: isShonichi,
+            is_birthday: isBirthday,
+            is_graduation: isGraduation
+        });
     });
-}
 
-async function adminUpdateStatus(memberId, fieldName, isChecked) {
-    const { error } = await supabaseClient.from('performing_members')
-        .update({ [fieldName]: isChecked }).match({ schedule_id: currentAdminScheduleId, member_id: memberId });
-    if (error) alert('Gagal update: ' + error.message); else refreshDetailSaatIni();
-}
+    if (updates.length === 0) return alert('Tidak ada data yang bisa disimpan.');
 
-async function adminTambahMember() {
-    const memberId = document.getElementById('admin-select-member').value;
-    if (!memberId) return alert('Pilih member dulu!');
-    const { error } = await supabaseClient.from('performing_members')
-        .insert([{ schedule_id: currentAdminScheduleId, member_id: memberId, blocking: 99 }]); 
-    if (error) alert('Gagal tambah: ' + error.message);
-    else { await muatDataAdminLineup(); refreshDetailSaatIni(); }
-}
+    const { error } = await supabaseClient.from('performing_members').upsert(updates);
+    
+    if (error) {
+        alert('Gagal menyimpan perubahan massal: ' + error.message);
+    } else {
+        alert('Perubahan centang berhasil disimpan!');
+        refreshDetailSaatIni();
+    }
+};
 
-async function adminHapusMember(memberId) {
-    if (!confirm('Yakin ingin menghapus member ini dari lineup?')) return;
+window.adminHapusMember = async function(memberId) {
+    if (!confirm('Yakin ingin mengeluarkan member ini dari lineup show?')) return;
     const { error } = await supabaseClient.from('performing_members').delete().match({ schedule_id: currentAdminScheduleId, member_id: memberId });
-    if (error) alert('Gagal hapus: ' + error.message);
+    if (error) alert('Gagal mengeluarkan: ' + error.message);
     else { await muatDataAdminLineup(); refreshDetailSaatIni(); }
-}
+};
 
 function refreshDetailSaatIni() {
     if(currentScheduleData && currentScheduleData.scheduleId) {

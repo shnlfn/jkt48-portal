@@ -1,32 +1,60 @@
 // --- KONFIGURASI SUPABASE ---
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// --- FUNGSI CEK LOKAL ---
+// Cukup cek localhost, otomatis panel admin menyala di setiap halaman
+function isLocalhost() {
+    return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
+}
+
 // --- KEAMANAN DASAR ---
-document.addEventListener('contextmenu', event => event.preventDefault());
-document.onkeydown = function(e) {
-    if (e.keyCode == 123) return false; // F12
-    if (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0))) return false;
-    if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false; // Ctrl+U
+if (!isLocalhost()) {
+    document.addEventListener('contextmenu', event => event.preventDefault());
+    document.onkeydown = function(e) {
+        if (e.keyCode == 123) return false; // F12
+        if (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0))) return false;
+        if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false; // Ctrl+U
+    }
 }
 
 // --- SISTEM NAVIGASI ---
 function bukaHalaman(idHalaman) {
+    // Sembunyikan semua halaman
     document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-    document.getElementById(idHalaman).classList.add('active');
+    // Tampilkan halaman yang dituju
+    const targetHalaman = document.getElementById(idHalaman);
+    if(targetHalaman) targetHalaman.classList.add('active');
 
-    document.getElementById('btn-schedule').classList.remove('active');
-    document.getElementById('btn-member').classList.remove('active');
-    document.getElementById('btn-song').classList.remove('active');
-    document.getElementById('btn-team').classList.remove('active');
+    // Reset tombol menu secara aman (mencegah crash jika ID tidak ditemukan)
+    const tombolMenu = ['btn-schedule', 'btn-member', 'btn-song', 'btn-team', 'btn-stage'];
+    tombolMenu.forEach(idBtn => {
+        const btn = document.getElementById(idBtn);
+        if (btn) btn.classList.remove('active');
+    });
     
-    if(idHalaman.includes('schedule')) document.getElementById('btn-schedule').classList.add('active');
-    else if(idHalaman.includes('member')) document.getElementById('btn-member').classList.add('active');
-    else if(idHalaman.includes('album') || idHalaman.includes('song')) document.getElementById('btn-song').classList.add('active');
-    else if(idHalaman.includes('team')) document.getElementById('btn-team').classList.add('active');
+    // Set tombol aktif sesuai halaman
+    if(idHalaman.includes('schedule')) {
+        const btn = document.getElementById('btn-schedule'); if(btn) btn.classList.add('active');
+    }
+    else if(idHalaman.includes('member')) {
+        const btn = document.getElementById('btn-member'); if(btn) btn.classList.add('active');
+    }
+    else if(idHalaman.includes('album') || idHalaman.includes('song') || idHalaman.includes('discography')) {
+        const btn = document.getElementById('btn-song'); if(btn) btn.classList.add('active');
+    }
+    else if(idHalaman.includes('team')) {
+        const btn = document.getElementById('btn-team'); if(btn) btn.classList.add('active');
+    }
+    else if(idHalaman.includes('stage')) {
+        const btn = document.getElementById('btn-stage'); if(btn) btn.classList.add('active');
+    }
     
     window.scrollTo(0, 0); 
     
-    if(idHalaman === 'view-teams') muatDaftarTeam();
+    // Panggil fungsi muat data berdasarkan menu
+    if(idHalaman === 'view-teams') { if(typeof muatDaftarTeam === 'function') muatDaftarTeam(); }
+    if(idHalaman === 'view-stages') { if(typeof muatDaftarStage === 'function') muatDaftarStage(); }
+    if(idHalaman === 'view-albums') { if(typeof muatDaftarAlbum === 'function') muatDaftarAlbum(); }
 }
 
 // --- FUNGSI TANGGAL & HELPER ---
@@ -88,13 +116,10 @@ function getTeamColor(teamName) {
     if (t.includes('passion')) return 'rgb(246, 146, 32)'; 
     if (t.includes('virtual')) return 'rgb(3, 70, 192)'; 
     if (t.includes('trainee')) return 'rgb(196, 120, 120)'; 
-    if (t.includes('team j')) return '#ed1c24';
+    if (t.includes('team j') && !t.includes('jkt48')) return '#ed1c24';
     if (t.includes('team kiii')) return '#ffe900';
     if (t.includes('team t')) return '#f88ccf';
-    
-    // Pastikan baris di bawah ini ada!
     if (t === 'jkt48') return '#D61515'; 
-    
     return ''; 
 }
 
@@ -109,15 +134,11 @@ function formatNamaDuaBaris(nama) {
     return `${barisSatu}<br>${barisDua}`;
 }
 
-// --- PERBAIKAN: MENDETEKSI FOLDER VIRTUAL ---
 function getFolderStatus(member) {
     if (!member) return 'anggota';
-
-    // Cek apakah member ini ada di tim Virtual
     const t = (member.team || '').toLowerCase();
     if (t.includes('virtual')) return 'virtual';
 
-    // Cek status reguler
     const s = (member.status || '').toLowerCase();
     if (s.includes('graduated') || s.includes('graduation') || s.includes('lulus') || s.includes('resign') || s.includes('mengundurkan diri') || s.includes('dismissed') || s.includes('dikeluarkan')) return 'graduated';
     if (s.includes('trainee')) return 'trainee';
@@ -128,7 +149,7 @@ function getFolderStatus(member) {
 function getFotoMemberLokal(member) {
     if (!member || !member.nama) return 'favicon.png';
     const namaFormat = member.nama.toLowerCase().trim().replace(/\s+/g, '_');
-    const folder = getFolderStatus(member); // Menggunakan objek member utuh
+    const folder = getFolderStatus(member); 
     return `images/members/${folder}/${namaFormat}.jpg`;
 }
 
@@ -136,7 +157,7 @@ function generateMemberImageHtml(member, customJudul = null, customTipe = null, 
     if (!member || !member.nama) return `<img src="favicon.png" style="${inlineStyle}; background-color:#d81b60;" class="${className}">`;
     
     const namaFormat = member.nama.toLowerCase().trim().replace(/\s+/g, '_');
-    const folder = getFolderStatus(member); // Menggunakan objek member utuh
+    const folder = getFolderStatus(member);
 
     let fotoSrc = '';
     let isCustom = false;
@@ -177,7 +198,9 @@ window.fallbackFoto = function(imgElem) {
 
 async function hitungPengunjung() {
     try {
-        if (window.location.hostname === 'jkt48portal.netlify.app') await supabaseClient.rpc('increment_page_view');
+        if (window.location.hostname === 'jkt48portal.netlify.app' && typeof supabaseClient !== 'undefined') {
+            await supabaseClient.rpc('increment_page_view');
+        }
     } catch (err) {}
 }
 
@@ -187,7 +210,7 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('filter-tahun').value = sekarang.getFullYear();
     document.getElementById('filter-bulan').value = sekarang.getMonth() + 1;
     document.getElementById('tahun-copyright').innerText = sekarang.getFullYear();
-    
+
     hitungPengunjung(); 
     if(typeof terapkanFilterJadwal === 'function') terapkanFilterJadwal();
     if(typeof muatDaftarMember === 'function') muatDaftarMember();

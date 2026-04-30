@@ -70,6 +70,12 @@ async function muatDetailTeam(teamId) {
     const container = document.getElementById('info-detail-team');
     container.innerHTML = '<p style="text-align:center;">Memuat data sejarah tim...</p>';
     
+    // PERBAIKAN: Tarik data dari server jika user bypass halaman daftar (cache kosong)
+    if (dataSemuaTeam.length === 0) {
+        const { data } = await supabaseClient.from('teams').select('*').order('tanggal_dibentuk', { ascending: true });
+        if (data) dataSemuaTeam = data;
+    }
+
     const team = dataSemuaTeam.find(t => String(t.id) === String(teamId));
     if(!team) return container.innerHTML = '<p style="text-align:center; color:red;">Gagal menemukan data tim.</p>';
 
@@ -82,9 +88,10 @@ async function muatDetailTeam(teamId) {
     const { data: teamMembers } = await supabaseClient.from('members').select('*').eq('team', team.nama).not('status', 'ilike', '%Graduated%').not('status', 'ilike', '%Resign%').not('status', 'ilike', '%Dismissed%').order('nama', { ascending: true });
     const { data: historyData } = await supabaseClient.from('member_team_history').select('status_keluar, tanggal_selesai, members(id, nama, nama_panggilan, status, generasi)').eq('team_id', team.id).order('tanggal_selesai', { ascending: false, nullsFirst: false });
 
-    const { data: teamSchedules } = await supabaseClient.from('theater_schedules')
-        .select('id, judul_show, tanggal_waktu, is_shonichi, is_senshuraku, tipe_jadwal')
-        .eq('team', team.nama).order('tanggal_waktu', { ascending: true });
+    const [ { data: teamSchedules }, { data: teamStagesMaster } ] = await Promise.all([
+        supabaseClient.from('theater_schedules').select('id, judul_show, tanggal_waktu, is_shonichi, is_senshuraku, tipe_jadwal').eq('team', team.nama).order('tanggal_waktu', { ascending: true }),
+        supabaseClient.from('stages').select('id, nama_stage, tanggal_shonichi, tanggal_senshuraku').ilike('team', `%${team.nama}%`)
+    ]);
 
     let isDisbanded = team.tanggal_bubar ? true : false;
 
@@ -202,7 +209,7 @@ async function muatDetailTeam(teamId) {
             if (jadwal.tipe_jadwal && jadwal.tipe_jadwal.toLowerCase() === 'event') return;
 
             let judulBersih = jadwal.judul_show.replace(/ - Shonichi/i, '').replace(/ - Senshuraku/i, '').replace(/ \(.*\)/g, '').split(' | ')[0].trim();
-            if (!stagesMap[judulBersih]) stagesMap[judulBersih] = { nama: judulBersih, shonichi: null, hasExplicitShonichi: false, senshuraku: null, totalPerformances: 0 };
+            if (!stagesMap[judulBersih]) stagesMap[judulBersih] = { nama: judulBersih, shonichi: null, hasExplicitShonichi: false, senshuraku: null, totalPerformances: 0, idMaster: null };
 
             const tglJadwal = new Date(jadwal.tanggal_waktu);
             
@@ -220,6 +227,18 @@ async function muatDetailTeam(teamId) {
 
             if (tglJadwal <= now) stagesMap[judulBersih].totalPerformances++;
         });
+
+        if (teamStagesMaster && teamStagesMaster.length > 0) {
+            for (let judul in stagesMap) {
+                const masterMatch = teamStagesMaster.find(sm => sm.nama_stage.toLowerCase().includes(judul.toLowerCase()) || judul.toLowerCase().includes(sm.nama_stage.toLowerCase()));
+                if (masterMatch) {
+                    stagesMap[judul].idMaster = masterMatch.id;
+                    stagesMap[judul].nama = masterMatch.nama_stage; 
+                    if (masterMatch.tanggal_shonichi) stagesMap[judul].shonichi = masterMatch.tanggal_shonichi;
+                    if (masterMatch.tanggal_senshuraku) stagesMap[judul].senshuraku = masterMatch.tanggal_senshuraku;
+                }
+            }
+        }
 
         let stagesArray = Object.values(stagesMap).sort((a, b) => new Date(a.shonichi) - new Date(b.shonichi));
 
@@ -248,8 +267,11 @@ async function muatDetailTeam(teamId) {
                 const activeBadge = isActive ? `<span style="background-color:${warnaTimFix}; color:white; padding:2px 6px; font-size:0.7em; border-radius:4px; margin-left:8px;">ACTIVE</span>` : '';
                 const trStyle = isActive ? `background-color: ${warnaTimFix}15; border-left: 4px solid ${warnaTimFix};` : `background-color: #fff;`;
                 
+                const safeStageName = stage.nama.replace(/'/g, "\\'");
+                const safeTeamName = team.nama.replace(/'/g, "\\'");
+
                 stagesHtml += `
-                    <tr style="${trStyle} border-bottom:1px solid #eee; cursor:pointer;" onclick="muatDetailStage('${stage.nama}', '${team.nama}', '${warnaTimFix}')">
+                    <tr style="${trStyle} border-bottom:1px solid #eee; cursor:pointer;" onclick="if(typeof muatDetailStage === 'function') muatDetailStage('${safeStageName}', '${safeTeamName}', '${warnaTimFix}', 'view-team-detail')">
                         <td style="padding: 12px; font-weight: bold; color: ${warnaTimFix};">${stage.nama} ${activeBadge}</td>
                         <td style="padding: 12px; color: #666; font-weight: ${isActive ? 'bold' : 'normal'};">${dateStr}</td>
                         <td style="padding: 12px; text-align:center; font-weight: bold; color: #555;">${stage.totalPerformances || 'TBA'}</td>
@@ -291,238 +313,4 @@ async function muatDetailTeam(teamId) {
         <h3 style="margin-top: 30px; color:${warnaTimFix}; border-bottom:2px solid ${warnaTimFix}; padding-bottom:5px;">&#127908; Stages</h3>
         ${stagesHtml || '<p style="text-align:center; color:#888;">Belum ada data Stage.</p>'}
     `;
-}
-
-// ============================================================================
-// HALAMAN DETAIL WIKI SETLIST
-// ============================================================================
-async function muatDetailStage(namaStage, namaTeam, warnaTema) {
-    bukaHalaman('view-stage-detail');
-    const container = document.getElementById('info-detail-stage');
-    container.innerHTML = '<div id="loading-schedule" style="text-align:center;">Memuat data Setlist...</div>';
-    window.scrollTo(0, 0);
-
-    const { data: schedules, error } = await supabaseClient
-        .from('theater_schedules')
-        .select('id, judul_show, tanggal_waktu, is_shonichi, is_senshuraku')
-        .eq('team', namaTeam)
-        .ilike('judul_show', `%${namaStage}%`)
-        .order('tanggal_waktu', { ascending: true });
-
-    if (error || !schedules || schedules.length === 0) return container.innerHTML = `<p style="text-align:center; color:red;">Gagal memuat atau data belum tersedia.</p>`;
-
-    let shonichi = null; let senshuraku = null; let totalPerformances = 0;
-    let shonichiScheduleId = schedules[0].id; 
-    const now = new Date();
-
-    schedules.forEach(j => {
-        const tglJadwal = new Date(j.tanggal_waktu);
-        if (j.is_shonichi || !shonichi || tglJadwal < new Date(shonichi)) {
-            shonichi = j.tanggal_waktu;
-            if(j.is_shonichi) shonichiScheduleId = j.id; 
-        }
-        if (j.is_senshuraku || j.judul_show.toLowerCase().includes('senshuraku')) {
-            if (!senshuraku || tglJadwal > new Date(senshuraku)) senshuraku = j.tanggal_waktu;
-        }
-        if (tglJadwal <= now) totalPerformances++;
-    });
-
-    const isActive = !senshuraku;
-    function formatTgl(isoStr) {
-        if (!isoStr) return ''; const d = new Date(isoStr);
-        return d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0');
-    }
-
-    const tglShonichiStr = formatTgl(shonichi);
-    const tglSenshurakuStr = isActive ? 'Sekarang (Active)' : formatTgl(senshuraku);
-    const activeBadge = isActive ? `<span style="background-color:${warnaTema}; color:white; padding:3px 8px; font-size:0.4em; border-radius:5px; vertical-align:middle; margin-left:10px; position:relative; top:-5px;">ACTIVE</span>` : '';
-
-    const { data: songsData } = await supabaseClient.from('schedule_songs').select('track_number, songs(judul_lagu, tipe_lagu)').eq('schedule_id', shonichiScheduleId).order('track_number', { ascending: true });
-
-    const scheduleIds = schedules.map(s => s.id);
-    const { data: membersData } = await supabaseClient.from('performing_members').select('members(id, nama, nama_panggilan, status, team)').in('schedule_id', scheduleIds);
-
-    let uniqueMembers = []; let memberIdsSet = new Set();
-    if (membersData) {
-        membersData.forEach(item => {
-            if (item.members && !memberIdsSet.has(item.members.id)) {
-                memberIdsSet.add(item.members.id); uniqueMembers.push(item.members);
-            }
-        });
-    }
-    uniqueMembers.sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
-
-    let html = `
-        <div style="border-bottom: 3px solid ${warnaTema}; padding-bottom: 15px; margin-bottom: 25px;">
-            <h1 style="color:${warnaTema}; margin:0 0 5px 0; font-size:2.2em;">${namaStage} ${activeBadge}</h1>
-            <p style="margin:0; font-size:1.1em; color:#555; font-weight:bold;">Team: ${namaTeam}</p>
-        </div>
-        
-        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 5px solid ${warnaTema}; margin-bottom: 30px;">
-            <h3 style="margin-top:0; color:#333;">&#128203; General Information</h3>
-            <ul style="list-style:none; padding:0; margin:0; line-height:1.8; color:#444;">
-                <li><strong>Stage Name:</strong> ${namaStage}</li>
-                <li><strong>Team:</strong> ${namaTeam}</li>
-                <li><strong>Shonichi / Senshuraku:</strong> ${tglShonichiStr} - ${tglSenshurakuStr}</li>
-                <li>
-                    <strong>Total Performances:</strong> 
-                    <a href="javascript:void(0)" onclick="muatDaftarPerformanceStage('${namaStage}', '${namaTeam}', '${warnaTema}')" style="color:${warnaTema}; text-decoration:none; border-bottom: 1px dashed ${warnaTema}; font-weight:bold; margin-left:5px;">
-                        ${totalPerformances} Shows (Lihat Daftar Show &#10140;)
-                    </a>
-                </li>
-            </ul>
-        </div>
-    `;
-
-    html += `<h3 style="color:${warnaTema}; border-bottom: 1px solid #eee; padding-bottom:10px;">&#127925; Setlist</h3>`;
-    if (songsData && songsData.length > 0) {
-        html += `<ul style="list-style:none; padding:0; margin:0 0 30px 0;">`;
-        songsData.forEach((item, idx) => {
-            const lagu = item.songs; if(!lagu) return;
-            const trackNo = item.track_number ? String(item.track_number).padStart(2, '0') : String(idx + 1).padStart(2, '0');
-            const unitBadge = (lagu.tipe_lagu && lagu.tipe_lagu.toLowerCase() === 'unit') ? `<span style="background:#ff9800; color:white; font-size:0.7em; padding:2px 5px; border-radius:3px; margin-left:8px;">UNIT</span>` : '';
-            html += `<li style="padding: 8px 0; border-bottom: 1px dashed #e2e8f0; color: #444;"><span style="font-family:monospace; color:#999; margin-right:10px;">M${trackNo}.</span> <strong>${lagu.judul_lagu}</strong> ${unitBadge}</li>`;
-        });
-        html += `</ul>`;
-    } else {
-        html += `<p style="color:#888; font-style:italic; margin-bottom: 30px;">Data tracklist belum diinput di database.</p>`;
-    }
-
-    html += `<h3 style="color:${warnaTema}; border-bottom: 1px solid #eee; padding-bottom:10px; margin-bottom: 20px;">&#128101; Participating Members (${uniqueMembers.length})</h3>`;
-    if (uniqueMembers.length > 0) {
-        html += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 15px;">`;
-        uniqueMembers.forEach(m => {
-            const namaPendek = m.nama_panggilan || m.nama.split(' ')[0];
-            const isGraduated = (m.status || '').toLowerCase().includes('graduated');
-            
-            let imgStyle = `width: 80px; height: 80px; object-fit: cover; border-radius: 50%; border: 3px solid ${warnaTema}; box-shadow: 0 0 5px ${warnaTema}66;`;
-            if(isGraduated) imgStyle += ` filter: grayscale(100%); opacity: 0.8; border-color: #94a3b8;`;
-            
-            const imgHtml = generateMemberImageHtml(m, null, null, null, imgStyle, '');
-            
-            html += `<div style="text-align:center; cursor:pointer;" onclick="muatDetailMemberById('${m.id}')"><div style="position:relative; width:80px; height:80px; margin:0 auto;">${imgHtml}</div><p style="color:${isGraduated ? '#64748b' : warnaTema}; margin: 5px 0 0 0; font-size:0.85em; font-weight:bold;">${namaPendek}</p></div>`;
-        });
-        html += `</div>`;
-    } else {
-        html += `<p style="color:#888; font-style:italic;">Belum ada member tercatat.</p>`;
-    }
-
-    container.innerHTML = html;
-}
-
-// ============================================================================
-// FUNGSI BARU: HALAMAN DAFTAR PERFORMANCES (TABEL SHOWS)
-// ============================================================================
-async function muatDaftarPerformanceStage(namaStage, namaTeam, warnaTema) {
-    bukaHalaman('view-stage-performances');
-    
-    // Atur aksi tombol "Kembali" untuk balik ke Wiki Setlist
-    document.getElementById('btn-back-stage-performances').onclick = () => muatDetailStage(namaStage, namaTeam, warnaTema);
-    
-    const container = document.getElementById('info-stage-performances');
-    container.innerHTML = '<div style="text-align:center; margin-top:50px;">Memuat daftar performance...</div>';
-    window.scrollTo(0, 0);
-
-    const { data: schedules, error } = await supabaseClient
-        .from('theater_schedules')
-        .select('id, judul_show, tanggal_waktu, is_shonichi, is_senshuraku, lokasi, tipe_jadwal, tipe_jadwal_sekunder, foto_event')
-        .eq('team', namaTeam)
-        .ilike('judul_show', `%${namaStage}%`)
-        .order('tanggal_waktu', { ascending: true });
-
-    if (error || !schedules || schedules.length === 0) return container.innerHTML = `<p style="text-align:center; color:red;">Gagal memuat data jadwal.</p>`;
-
-    const scheduleIds = schedules.map(s => s.id);
-    const { data: membersData } = await supabaseClient
-        .from('performing_members')
-        .select('schedule_id, is_center, is_birthday, is_graduation, is_shonichi, members(nama, nama_panggilan)')
-        .in('schedule_id', scheduleIds);
-
-    let showDetailsMap = {};
-    schedules.forEach(s => {
-        showDetailsMap[s.id] = { center: [], sts: [], grad: [], shonichi: [] };
-    });
-
-    if (membersData) {
-        membersData.forEach(item => {
-            if (item.members) {
-                const namaPendek = item.members.nama_panggilan || item.members.nama.split(' ')[0];
-                if (item.is_center) showDetailsMap[item.schedule_id].center.push(namaPendek);
-                if (item.is_birthday) showDetailsMap[item.schedule_id].sts.push(namaPendek);
-                if (item.is_graduation) showDetailsMap[item.schedule_id].grad.push(namaPendek);
-                if (item.is_shonichi) showDetailsMap[item.schedule_id].shonichi.push(namaPendek);
-            }
-        });
-    }
-
-    let html = `
-        <div style="border-bottom: 3px solid ${warnaTema}; padding-bottom: 15px; margin-bottom: 25px;">
-            <h1 style="color:${warnaTema}; margin:0 0 5px 0; font-size:2.2em;">${namaStage}</h1>
-            <p style="margin:0; font-size:1.1em; color:#555; font-weight:bold;">Team: ${namaTeam}</p>
-        </div>
-        
-        <h3 style="color:${warnaTema}; margin-top:0; border-bottom: 1px solid #eee; padding-bottom: 10px;">&#127915; Performance List</h3>
-        <div style="overflow-x: auto; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-            <table style="width: 100%; border-collapse: collapse; font-size: 0.9em; background: #fff;">
-                <thead>
-                    <tr style="background-color: ${warnaTema}; color: white; text-align:center;">
-                        <th style="padding: 12px; border: 1px solid #eee;">#</th>
-                        <th style="padding: 12px; border: 1px solid #eee; text-align:left;">Hari, Tanggal</th>
-                        <th style="padding: 12px; border: 1px solid #eee;">Waktu</th>
-                        <th style="padding: 12px; border: 1px solid #eee;">Global Center</th>
-                        <th style="padding: 12px; border: 1px solid #eee;">Shonichi</th>
-                        <th style="padding: 12px; border: 1px solid #eee;">STS</th>
-                        <th style="padding: 12px; border: 1px solid #eee;">Last Show</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-
-    let showCounter = 1;
-    const now = new Date();
-    schedules.forEach(j => {
-        const tgl = new Date(j.tanggal_waktu);
-        if (tgl <= now) {
-            const formatHari = tgl.toLocaleDateString('id-ID', { weekday: 'long' });
-            const formatTglLengkap = tgl.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-            const formatJam = tgl.toLocaleTimeString('id-ID', { hour: '2-digit', minute:'2-digit' }).replace('.', ':');
-            
-            // Konversi teks untuk aman disisipkan ke fungsi klik
-            const formatWaktuFull = `${formatHari}, ${formatTglLengkap} | Pukul ${formatJam} WIB`;
-            const judulAman = j.judul_show.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-            const lokasiAman = (j.lokasi || '').replace(/'/g, "\\'");
-            const tipeAman = (j.tipe_jadwal || 'Theater').replace(/'/g, "\\'");
-            const sekunderAman = (j.tipe_jadwal_sekunder || '').replace(/'/g, "\\'");
-            const fotoAman = (j.foto_event || '').replace(/'/g, "\\'");
-            
-            // Aksi klik memanggil halaman Jadwal dari schedule.js
-            const clickAction = `muatDetailJadwal('${j.id}', '${judulAman}', '${formatWaktuFull}', '${lokasiAman}', '${tipeAman}', '${fotoAman}', '${sekunderAman}')`;
-
-            const details = showDetailsMap[j.id];
-            const centerTxt = details.center.length > 0 ? details.center.join(', ') : '-';
-            const shonichiTxt = details.shonichi.length > 0 ? details.shonichi.join(', ') : '-';
-            const stsTxt = details.sts.length > 0 ? details.sts.join(', ') : '-';
-            const gradTxt = details.grad.length > 0 ? details.grad.join(', ') : '-';
-
-            html += `
-                <tr style="border-bottom: 1px solid #eee; background-color: #fff; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f9f9f9'" onmouseout="this.style.backgroundColor='#fff'">
-                    <td style="padding: 10px; text-align: center; color: #555; font-weight:bold;">${showCounter}</td>
-                    <td style="padding: 10px;">
-                        <a href="javascript:void(0)" onclick="${clickAction}" style="color: ${warnaTema}; text-decoration: none; font-weight: bold; border-bottom: 1px solid transparent; transition:0.2s;" onmouseover="this.style.borderBottom='1px solid ${warnaTema}'" onmouseout="this.style.borderBottom='1px solid transparent'">
-                            ${formatHari}, ${formatTglLengkap}
-                        </a>
-                    </td>
-                    <td style="padding: 10px; text-align: center; color: #666; font-weight: bold;">${formatJam}</td>
-                    <td style="padding: 10px; text-align: center; color: #d4af37; font-weight: bold;">${centerTxt}</td>
-                    <td style="padding: 10px; text-align: center; color: #00bcd4; font-weight: bold;">${shonichiTxt}</td>
-                    <td style="padding: 10px; text-align: center; color: #4caf50; font-weight: bold;">${stsTxt}</td>
-                    <td style="padding: 10px; text-align: center; color: #e53935; font-weight: bold;">${gradTxt}</td>
-                </tr>
-            `;
-            showCounter++;
-        }
-    });
-
-    html += `</tbody></table></div>`;
-    container.innerHTML = html;
 }
