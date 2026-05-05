@@ -234,7 +234,10 @@ async function muatDetailJadwal(scheduleId, judul, waktu, lokasi, tipeJadwal, fo
     
     if (typeof siapkanAdminPanel === "function") siapkanAdminPanel(scheduleId);
     
-    let teamLower = judul.toLowerCase();
+    // Tarik data tim dari tabel schedule agar warna akurat sesuai dengan Badge list jadwal
+    const { data: schedData } = await supabaseClient.from('theater_schedules').select('team').eq('id', scheduleId).single();
+    let teamLower = schedData && schedData.team ? schedData.team.toLowerCase() : judul.toLowerCase();
+    
     let warnaTema = getTeamColor(teamLower) || '#d81b60'; 
     
     let tipeJudulFoto = 'Foto Teater';
@@ -258,6 +261,8 @@ async function muatDetailJadwal(scheduleId, judul, waktu, lokasi, tipeJadwal, fo
     elJudul.style.color = warnaTema;
 
     elWaktu.innerText = waktu;
+    // --- PERBAIKAN: WAKTU TETAP DEFAULT/HITAM/ABU-ABU ---
+    elWaktu.style.color = '#666';
 
     elLokasi.innerHTML = `&#128205; ${lokasi || 'JKT48 Theater, fX Sudirman'}`;
     elLokasi.style.color = warnaTema;
@@ -336,26 +341,21 @@ async function muatDetailJadwal(scheduleId, judul, waktu, lokasi, tipeJadwal, fo
             let floatingIcons = ''; let floatBadge = ''; let h3Style = '';
             let warnaTimTampil = getTeamColor(member.team) || warnaTema;
 
-            // --- PERBAIKAN UI: BADGE TUMPUK (STACKED) AGAR TIDAK LEBAR ---
-            if (activeEvents.length > 0) {
-                // Konfigurasi icon melayang di atas
-                if (activeEvents.length === 1) {
-                    floatingIcons = `<div class="icon-single" style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); font-size:1.4em; z-index:3; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));">${activeEvents[0].icon}</div>`;
-                    h3Style = `color: ${activeEvents[0].textColor};`;
-                } else {
-                    floatingIcons = `
-                        <div style="position:absolute; top:-8px; left:-8px; font-size:1.3em; z-index:3; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));">${activeEvents[0].icon}</div>
-                        <div style="position:absolute; top:-8px; right:-8px; font-size:1.3em; z-index:3; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));">${activeEvents[1].icon}</div>
-                    `;
-                    h3Style = `color: ${activeEvents[0].textColor};`;
-                }
-
-                // Konfigurasi tumpukan badge rapi di bawah
-                floatBadge = `<div style="position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 3px; z-index: 4; align-items: center; width: max-content;">`;
-                activeEvents.forEach(ev => {
-                    floatBadge += `<span style="background: linear-gradient(135deg, ${ev.color1}, ${ev.color2}); font-size: 0.55em; padding: 2px 6px; border-radius: 4px; color: white; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); border: 1px solid white; white-space: nowrap; line-height: 1;">${ev.name}</span>`;
-                });
-                floatBadge += `</div>`;
+            // --- PERBAIKAN UI: BADGE SATU BARIS RAPI SEPERTI MEMBER.JS ---
+            if (activeEvents.length === 1) {
+                const ev = activeEvents[0];
+                floatingIcons = `<div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); font-size:1.4em; z-index:3; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));">${ev.icon}</div>`;
+                floatBadge = `<div style="position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); background: linear-gradient(135deg, ${ev.color1}, ${ev.color2}); font-size:0.55em; padding:2px 8px; border-radius:10px; color:white; font-weight:bold; border:1px solid white; box-shadow:0 2px 4px rgba(0,0,0,0.2); z-index:3; letter-spacing:0.5px; white-space:nowrap;">${ev.name}</div>`;
+                h3Style = `color: ${ev.textColor};`;
+            } else if (activeEvents.length >= 2) {
+                const ev1 = activeEvents[0]; const ev2 = activeEvents[1];
+                floatingIcons = `
+                    <div style="position:absolute; top:-8px; left:-8px; font-size:1.3em; z-index:3; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));">${ev1.icon}</div>
+                    <div style="position:absolute; top:-8px; right:-8px; font-size:1.3em; z-index:3; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));">${ev2.icon}</div>
+                `;
+                const badgeText = activeEvents.map(e => e.name).join(' &bull; ');
+                floatBadge = `<div style="position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); background: linear-gradient(135deg, ${ev1.color1}, ${ev2.color1}); font-size:0.55em; padding:2px 8px; border-radius:10px; color:white; font-weight:bold; border:1px solid white; box-shadow:0 2px 4px rgba(0,0,0,0.2); z-index:3; letter-spacing:0.5px; white-space:nowrap;">${badgeText}</div>`;
+                h3Style = `color: ${ev1.textColor};`;
             } else { 
                 h3Style = `color: ${warnaTimTampil};`; 
             }
@@ -367,17 +367,14 @@ async function muatDetailJadwal(scheduleId, judul, waktu, lokasi, tipeJadwal, fo
             }
 
             const imgHtml = generateMemberImageHtml(member, judul, null, null, imgStyle);
-            
-            // Kalkulasi jarak dorong ke bawah agar badge yang menumpuk tidak menutupi nama member
-            let containerMarginBottom = activeEvents.length > 0 ? (activeEvents.length * 14) + 'px' : '0px';
 
             card.innerHTML = `
-                <div style="position:relative; width:80px; height:80px; margin:0 auto; margin-bottom: ${containerMarginBottom};">
+                <div style="position:relative; width:80px; height:80px; margin:0 auto 15px auto;">
                     ${floatingIcons}
                     ${imgHtml}
                     ${floatBadge}
                 </div>
-                <h3 style="${h3Style} margin: 5px 0 0 0; font-size:0.85em; font-weight:bold;" title="${member.nama}">${namaPendek}</h3>
+                <h3 style="${h3Style} margin: 0; font-size:0.85em; font-weight:bold; line-height: 1.2;" title="${member.nama}">${namaPendek}</h3>
             `;
             container.appendChild(card);
         });

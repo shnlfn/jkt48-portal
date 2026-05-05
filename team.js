@@ -1,3 +1,6 @@
+// ============================================================================
+// 4. HALAMAN DETAIL TEAM (DIPERBARUI)
+// ============================================================================
 let dataSemuaTeam = [];
 
 function bukaTabTim(tabName, event, warnaTimFix) {
@@ -88,10 +91,32 @@ async function muatDetailTeam(teamId) {
     const { data: teamMembers } = await supabaseClient.from('members').select('*').eq('team', team.nama).not('status', 'ilike', '%Graduated%').not('status', 'ilike', '%Resign%').not('status', 'ilike', '%Dismissed%').order('nama', { ascending: true });
     const { data: historyData } = await supabaseClient.from('member_team_history').select('status_keluar, tanggal_selesai, members(id, nama, nama_panggilan, status, generasi)').eq('team_id', team.id).order('tanggal_selesai', { ascending: false, nullsFirst: false });
 
-    const [ { data: teamSchedules }, { data: teamStagesMaster } ] = await Promise.all([
-        supabaseClient.from('theater_schedules').select('id, judul_show, tanggal_waktu, is_shonichi, is_senshuraku, tipe_jadwal').eq('team', team.nama).order('tanggal_waktu', { ascending: true }),
-        supabaseClient.from('stages').select('id, nama_stage, tanggal_shonichi, tanggal_senshuraku').ilike('team', `%${team.nama}%`)
-    ]);
+    // ============================================================================
+    // PERBAIKAN PENTING: MENGAMBIL SEMUA JADWAL TIM (TANPA LIMIT 1000)
+    // ============================================================================
+    let teamSchedules = [];
+    let fetchMore = true;
+    let offset = 0;
+    const limitRow = 1000;
+
+    while (fetchMore) {
+        const { data } = await supabaseClient
+            .from('theater_schedules')
+            .select('id, judul_show, tanggal_waktu, is_shonichi, is_senshuraku, tipe_jadwal')
+            .eq('team', team.nama)
+            .order('tanggal_waktu', { ascending: true })
+            .range(offset, offset + limitRow - 1);
+
+        if (data && data.length > 0) {
+            teamSchedules.push(...data);
+            offset += limitRow;
+            if (data.length < limitRow) fetchMore = false;
+        } else {
+            fetchMore = false;
+        }
+    }
+
+    const { data: teamStagesMaster } = await supabaseClient.from('stages').select('id, nama_stage, tanggal_shonichi, tanggal_senshuraku').ilike('team', `%${team.nama}%`);
 
     let isDisbanded = team.tanggal_bubar ? true : false;
 
@@ -201,6 +226,7 @@ async function muatDetailTeam(teamId) {
 
     let stagesHtml = '';
     
+    // Modifikasi untuk mengambil SEMUA Stage dari jadwal
     if (teamSchedules && teamSchedules.length > 0) {
         let stagesMap = {};
         const now = new Date();
@@ -228,6 +254,7 @@ async function muatDetailTeam(teamId) {
             if (tglJadwal <= now) stagesMap[judulBersih].totalPerformances++;
         });
 
+        // Tetap memeriksa kecocokan di master, tapi tidak menghapus yang tidak cocok
         if (teamStagesMaster && teamStagesMaster.length > 0) {
             for (let judul in stagesMap) {
                 const masterMatch = teamStagesMaster.find(sm => sm.nama_stage.toLowerCase().includes(judul.toLowerCase()) || judul.toLowerCase().includes(sm.nama_stage.toLowerCase()));
