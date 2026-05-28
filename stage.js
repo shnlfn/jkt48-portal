@@ -1,6 +1,7 @@
 let dataSemuaStageMaster = [];
 window.mapLaguMasterCache = {}; // Untuk sistem pencarian lagu (Select2 Native)
 window.asalHalamanStageGlobal = 'view-stages'; // Menyimpan jejak darimana halaman ini dipanggil
+window.mapWarnaTimCache = null; // Cache untuk menyimpan warna dinamis dari tabel teams
 
 // ============================================================================
 // 0. FUNGSI JEMBATAN KE DETAIL LAGU DARI STAGE
@@ -65,13 +66,31 @@ async function muatDaftarStage() {
             loading.style.display = 'none';
         }
 
+        // PENGAMBILAN WARNA TIM DINAMIS DARI DATABASE
+        if (!window.mapWarnaTimCache) {
+            const { data: dataTeams } = await supabaseClient.from('teams').select('nama, warna');
+            window.mapWarnaTimCache = {};
+            if (dataTeams) {
+                dataTeams.forEach(t => {
+                    if (t.nama && t.warna) {
+                        window.mapWarnaTimCache[t.nama.toLowerCase()] = t.warna;
+                    }
+                });
+            }
+        }
+
         // Render Kartu Stage
         container.innerHTML = '';
         dataSemuaStageMaster.forEach(stage => {
             const div = document.createElement('div');
             div.className = 'card-album'; 
             
-            let warnaTema = getTeamColor(stage.team) || '#d81b60';
+            // Mengutamakan warna dari database Teams, fallback ke getTeamColor
+            const namaTeamKey = (stage.team || '').toLowerCase();
+            let warnaTema = (window.mapWarnaTimCache && window.mapWarnaTimCache[namaTeamKey]) 
+                            ? window.mapWarnaTimCache[namaTeamKey] 
+                            : (getTeamColor(stage.team) || '#d81b60');
+                            
             // Set penanda asal halaman sebagai view-stages
             div.onclick = () => muatDetailStageMaster(stage.id, warnaTema, true, stage.team || 'JKT48', 'view-stages');
 
@@ -149,6 +168,11 @@ window.adminEditStage = function(id) {
     document.getElementById('adm-stg-foto-shonichi').value = stage.foto_shonichi_url || '';
     document.getElementById('adm-stg-foto-senshuraku').value = stage.foto_senshuraku_url || '';
     document.getElementById('adm-stg-catatan').value = stage.catatan || '';
+    
+    // Fitur Streaming
+    const inSpot = document.getElementById('adm-stg-spotify'); if(inSpot) inSpot.value = stage.spotify_url || '';
+    const inYt = document.getElementById('adm-stg-youtube-music'); if(inYt) inYt.value = stage.youtube_music_url || '';
+    const inApple = document.getElementById('adm-stg-apple-music'); if(inApple) inApple.value = stage.apple_music_url || '';
 
     const area = document.getElementById('admin-stage-area');
     area.style.display = 'block';
@@ -182,7 +206,10 @@ window.adminEditStage = function(id) {
 
 window.adminBatalEditStage = function() {
     window.currentEditStageId = null;
-    ['adm-stg-nama','adm-stg-jepang','adm-stg-ket','adm-stg-team','adm-stg-shonichi','adm-stg-senshuraku','adm-stg-banner','adm-stg-poster','adm-stg-foto-shonichi','adm-stg-foto-senshuraku','adm-stg-catatan'].forEach(id => document.getElementById(id).value = '');
+    ['adm-stg-nama','adm-stg-jepang','adm-stg-ket','adm-stg-team','adm-stg-shonichi','adm-stg-senshuraku','adm-stg-banner','adm-stg-poster','adm-stg-foto-shonichi','adm-stg-foto-senshuraku','adm-stg-catatan', 'adm-stg-spotify', 'adm-stg-youtube-music', 'adm-stg-apple-music'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.value = '';
+    });
     
     const area = document.getElementById('admin-stage-area');
     const btns = area.querySelectorAll('button');
@@ -197,6 +224,10 @@ window.adminBatalEditStage = function() {
 };
 
 async function adminSimpanStageBaru() {
+    const spotifyEl = document.getElementById('adm-stg-spotify');
+    const ytEl = document.getElementById('adm-stg-youtube-music');
+    const appleEl = document.getElementById('adm-stg-apple-music');
+
     const payload = {
         nama_stage: document.getElementById('adm-stg-nama').value,
         nama_jepang: document.getElementById('adm-stg-jepang').value || null,
@@ -208,7 +239,11 @@ async function adminSimpanStageBaru() {
         poster_url: document.getElementById('adm-stg-poster').value || null,
         foto_shonichi_url: document.getElementById('adm-stg-foto-shonichi').value || null,
         foto_senshuraku_url: document.getElementById('adm-stg-foto-senshuraku').value || null,
-        catatan: document.getElementById('adm-stg-catatan').value || null
+        catatan: document.getElementById('adm-stg-catatan').value || null,
+        // Pastikan null jika string kosong agar diterima database
+        spotify_url: spotifyEl && spotifyEl.value.trim() !== '' ? spotifyEl.value.trim() : null,
+        youtube_music_url: ytEl && ytEl.value.trim() !== '' ? ytEl.value.trim() : null,
+        apple_music_url: appleEl && appleEl.value.trim() !== '' ? appleEl.value.trim() : null
     };
 
     if(!payload.nama_stage) return alert('Judul Stage (Primary) wajib diisi!');
@@ -318,11 +353,28 @@ async function muatDetailStageMaster(identifier, passedWarna, isMaster = true, f
             tanggal_senshuraku: null,
             banner_url: null,
             poster_url: null,
-            catatan: null
+            catatan: null,
+            spotify_url: null,
+            youtube_music_url: null,
+            apple_music_url: null
         };
     }
 
-    const warnaTema = passedWarna || getTeamColor(namaTeam) || '#d81b60';
+    // PENGAMBILAN WARNA DINAMIS DARI DATABASE SEBAGAI PRIORITAS UTAMA
+    let warnaTema = passedWarna;
+    let teamIdDinamic = null; // Sekalian simpan ID-nya untuk fitur link tim di bawah
+    
+    if (namaTeam) {
+        const { data: teamInfo } = await supabaseClient.from('teams').select('id, warna').eq('nama', namaTeam).maybeSingle();
+        if (teamInfo) {
+            teamIdDinamic = teamInfo.id;
+            if (teamInfo.warna) warnaTema = teamInfo.warna;
+        }
+    }
+    // Fallback terakhir jika warna tidak ditemukan
+    if (!warnaTema) {
+        warnaTema = getTeamColor(namaTeam) || '#d81b60';
+    }
 
     let querySchedules = supabaseClient
         .from('theater_schedules')
@@ -339,7 +391,6 @@ async function muatDetailStageMaster(identifier, passedWarna, isMaster = true, f
     let dynShonichi = null; let dynSenshuraku = null; let totalPerf = 0;
     const now = new Date();
     let scheduleIds = [];
-    let keteranganStageDinamic = `JKT48 ${namaTeam} Spesial Setlist`;
 
     const masterShonichi = stageMaster.tanggal_shonichi ? stageMaster.tanggal_shonichi.substring(0, 10) : null;
     const masterSenshuraku = stageMaster.tanggal_senshuraku ? stageMaster.tanggal_senshuraku.substring(0, 10) : null;
@@ -348,8 +399,6 @@ async function muatDetailStageMaster(identifier, passedWarna, isMaster = true, f
     let targetSenshurakuDateStr = masterSenshuraku;
 
     if (schedules && schedules.length > 0) {
-        keteranganStageDinamic = schedules[0].tipe_jadwal_sekunder || keteranganStageDinamic;
-
         if (!targetShonichiDateStr) {
             const shonichiSched = schedules.find(s => s.is_shonichi) || schedules[0];
             targetShonichiDateStr = shonichiSched.tanggal_waktu.substring(0, 10);
@@ -457,14 +506,30 @@ async function muatDetailStageMaster(identifier, passedWarna, isMaster = true, f
     });
 
     // =========================================================================
-    // FITUR LINK TIM DINAMIS
+    // FITUR LINK TIM DINAMIS (MEMAKAI ID YANG SUDAH DITEMUKAN DI ATAS)
     // =========================================================================
     let teamLinkHtml = `<strong>${namaTeam}</strong>`;
-    if (namaTeam) {
-        const { data: teamDataLookup } = await supabaseClient.from('teams').select('id').eq('nama', namaTeam).maybeSingle();
-        if (teamDataLookup) {
-            teamLinkHtml = `<a href="javascript:void(0)" onclick="if(typeof muatDetailTeam === 'function') muatDetailTeam('${teamDataLookup.id}')" style="color:${warnaTema}; text-decoration:none; font-weight:bold; border-bottom: 1px dashed ${warnaTema}; transition:0.2s;" onmouseover="this.style.color='#004080'; this.style.borderBottomColor='#004080'" onmouseout="this.style.color='${warnaTema}'; this.style.borderBottomColor='${warnaTema}'">${namaTeam}</a>`;
+    if (teamIdDinamic) {
+        teamLinkHtml = `<a href="javascript:void(0)" onclick="if(typeof muatDetailTeam === 'function') muatDetailTeam('${teamIdDinamic}')" style="color:${warnaTema}; text-decoration:none; font-weight:bold; border-bottom: 1px dashed ${warnaTema}; transition:0.2s;" onmouseover="this.style.color='#004080'; this.style.borderBottomColor='#004080'" onmouseout="this.style.color='${warnaTema}'; this.style.borderBottomColor='${warnaTema}'">${namaTeam}</a>`;
+    }
+
+    // =========================================================================
+    // FITUR LINK STREAMING MUSIC
+    // =========================================================================
+    let streamingHtml = '';
+    if (stageMaster.spotify_url || stageMaster.youtube_music_url || stageMaster.apple_music_url) {
+        streamingHtml += `<li style="margin-top:10px; padding-top:10px; border-top:1px dashed #ccc; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">`;
+        streamingHtml += `<strong style="color:#666; font-size:0.9em; margin-right:5px;">Dengarkan:</strong>`;
+        if (stageMaster.spotify_url) {
+            streamingHtml += `<a href="${stageMaster.spotify_url}" target="_blank" style="background:#1DB954; color:white; padding:4px 10px; border-radius:15px; text-decoration:none; font-size:0.8em; font-weight:bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display:flex; align-items:center;"><span style="font-size:1.1em; margin-right:4px;">&#127911;</span> Spotify</a>`;
         }
+        if (stageMaster.apple_music_url) {
+            streamingHtml += `<a href="${stageMaster.apple_music_url}" target="_blank" style="background:#fa233b; color:white; padding:4px 10px; border-radius:15px; text-decoration:none; font-size:0.8em; font-weight:bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display:flex; align-items:center;"><span style="font-size:1.1em; margin-right:4px;">&#127822;</span> Apple Music</a>`;
+        }
+        if (stageMaster.youtube_music_url) {
+            streamingHtml += `<a href="${stageMaster.youtube_music_url}" target="_blank" style="background:#000000; color:white; padding:4px 10px; border-radius:15px; text-decoration:none; font-size:0.8em; font-weight:bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display:flex; align-items:center;"><span style="color:#ff0000; font-size:1.1em; margin-right:4px;">&#9654;&#65039;</span> YT Music</a>`;
+        }
+        streamingHtml += `</li>`;
     }
 
     // =========================================================================
@@ -478,7 +543,8 @@ async function muatDetailStageMaster(identifier, passedWarna, isMaster = true, f
         posterHtml = `<img src="${stageMaster.poster_url}" style="width: 120px; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.15); display: block; flex-shrink: 0;">`;
     }
 
-    let ketHtmlDetail = stageMaster.keterangan ? `<p style="margin:0; font-size:1.1em; color:#333; font-weight:bold;">${stageMaster.keterangan}</p>` : `<p style="margin:0; font-size:1.1em; color:#555; font-weight:bold;">Keterangan: <span style="color:${warnaTema};">${keteranganStageDinamic}</span></p>`;
+    // PERBAIKAN: Jika keterangan kosong, maka tidak akan ada teks keterangan yang dirender
+    let ketHtmlDetail = stageMaster.keterangan ? `<p style="margin:0; font-size:1.1em; color:#333; font-weight:bold;">${stageMaster.keterangan}</p>` : ``;
 
     html += `
         <div style="border-bottom: 3px solid ${warnaTema}; padding-bottom: 15px; margin-bottom: 25px;">
@@ -499,6 +565,7 @@ async function muatDetailStageMaster(identifier, passedWarna, isMaster = true, f
                             ${totalPerf} Shows (Lihat Daftar Show &#10140;)
                         </a>
                     </li>
+                    ${streamingHtml}
                     ${stageMaster.catatan ? `<li style="margin-top:10px; padding-top:10px; border-top:1px dashed #ccc; color:#666;"><strong>Notes:</strong><br>${stageMaster.catatan.replace(/\n/g, '<br>')}</li>` : ''}
                 </ul>
             </div>
@@ -707,9 +774,18 @@ async function muatDetailStageMaster(identifier, passedWarna, isMaster = true, f
         
         allMemArr.forEach(item => {
             const m = item.member;
-            const isGrad = m.status.toLowerCase().includes('grad') ? 'Graduated' : '';
             const tColor = getTeamColor(m.team) || '#ccc';
             
+            // Logika Status Keterangan yang spesifik dan berwarna
+            let statDisplay = '-';
+            let statColor = '#aaa';
+            const mStatLower = (m.status || '').toLowerCase();
+            
+            if (mStatLower.includes('announced graduation')) { statDisplay = 'Announced Graduation'; statColor = '#ad8a9e'; }
+            else if (mStatLower.includes('graduated') || mStatLower.includes('lulus')) { statDisplay = 'Graduated'; statColor = '#666'; }
+            else if (mStatLower.includes('dismissed') || mStatLower.includes('dikeluarkan')) { statDisplay = 'Dismissed'; statColor = '#d32f2f'; }
+            else if (mStatLower.includes('resign') || mStatLower.includes('mengundurkan diri')) { statDisplay = 'Resigned'; statColor = '#757575'; }
+
             let genDisplay = m.generasi ? m.generasi : '-';
             if(genDisplay !== '-' && !genDisplay.toString().toLowerCase().includes('gen')) {
                 genDisplay = 'Gen ' + genDisplay;
@@ -724,7 +800,7 @@ async function muatDetailStageMaster(identifier, passedWarna, isMaster = true, f
                     <td style="padding: 8px; border: 1px solid #ccc;">${tBadge}</td>
                     <td style="padding: 8px; border: 1px solid #ccc; text-align:left;">${renderTableMember}</td>
                     <td style="padding: 8px; border: 1px solid #ccc;">${firstAppDate}</td>
-                    <td style="padding: 8px; border: 1px solid #ccc; color:#e53935; font-weight:bold;">${isGrad}</td>
+                    <td style="padding: 8px; border: 1px solid #ccc; color:${statColor}; font-weight:bold;">${statDisplay}</td>
                 </tr>
             `;
         });

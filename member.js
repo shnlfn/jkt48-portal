@@ -10,6 +10,67 @@ function isLocalhost() {
     return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
 }
 
+window.toggleAdminAddMember = function() {
+    const area = document.getElementById('admin-add-member-area');
+    if (area.style.display === 'none') {
+        area.style.display = 'block';
+    } else {
+        window.adminBatalAddMember();
+    }
+};
+
+window.adminBatalAddMember = function() {
+    const ids = ['adm-new-namalengkap', 'adm-new-nama', 'adm-new-panggilan', 'adm-new-generasi', 'adm-new-status', 'adm-new-team', 'adm-new-tgl-lahir', 'adm-new-goldar', 'adm-new-tinggi', 'adm-new-tgl-masuk', 'adm-new-catchphrase'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.value = '';
+    });
+    document.getElementById('admin-add-member-area').style.display = 'none';
+};
+
+window.adminSimpanMemberBaru = async function() {
+    const nama = document.getElementById('adm-new-nama').value;
+    if (!nama) return alert('Nama panggung wajib diisi!');
+
+    const payload = {
+        nama_lengkap: document.getElementById('adm-new-namalengkap').value || null,
+        nama: nama,
+        nama_panggilan: document.getElementById('adm-new-panggilan').value || null,
+        status: document.getElementById('adm-new-status').value || null,
+        team: document.getElementById('adm-new-team').value || null,
+        generasi: document.getElementById('adm-new-generasi').value || null,
+        tanggal_lahir: document.getElementById('adm-new-tgl-lahir').value || null,
+        golongan_darah: document.getElementById('adm-new-goldar').value || null,
+        tinggi_badan: document.getElementById('adm-new-tinggi').value || null,
+        tanggal_masuk: document.getElementById('adm-new-tgl-masuk').value || null,
+        catchphrase: document.getElementById('adm-new-catchphrase').value || null
+    };
+
+    const { error } = await supabaseClient.from('members').insert([payload]);
+    if (error) {
+        alert('Gagal menambah member: ' + error.message);
+    } else {
+        alert('Member baru berhasil ditambahkan!');
+        window.adminBatalAddMember();
+        dataSemuaMember = []; // Reset cache agar loading ulang
+        muatDaftarMember();
+    }
+};
+
+window.adminHapusMemberData = async function(id) {
+    if(!confirm('YAKIN INGIN MENGHAPUS DATA MEMBER INI SECARA PERMANEN?\\nCatatan: Jika member ini sudah terikat di Lineup/Setlist, bisa menyebabkan error di halaman jadwal.')) return;
+    
+    const { error } = await supabaseClient.from('members').delete().eq('id', id);
+    if (error) {
+        alert('Gagal menghapus member: ' + error.message);
+    } else {
+        alert('Data Member berhasil dihapus!');
+        bukaHalaman('view-member');
+        dataSemuaMember = []; // Reset cache
+        muatDaftarMember();
+    }
+};
+
 async function toggleAdminMember(memberId) {
     const area = document.getElementById('admin-member-area');
     if (area.style.display === 'none') {
@@ -35,18 +96,19 @@ async function muatDataAdminProfil() {
             <div><label style="font-weight:bold;">Nama Lengkap:</label><input type="text" id="adm-nama-lengkap" value="${data.nama_lengkap || ''}" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
             <div><label style="font-weight:bold;">Nama Panggung:</label><input type="text" id="adm-nama" value="${data.nama || ''}" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
             <div><label style="font-weight:bold;">Panggilan:</label><input type="text" id="adm-panggilan" value="${data.nama_panggilan || ''}" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
-            <div><label style="font-weight:bold;">Status (Anggota/Trainee/Graduated dll):</label><input type="text" id="adm-status" value="${data.status || ''}" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
+            <div><label style="font-weight:bold;">Status (Anggota/Trainee dll):</label><input type="text" id="adm-status" value="${data.status || ''}" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
             <div><label style="font-weight:bold;">Team Saat Ini:</label><input type="text" id="adm-team" value="${data.team || ''}" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
-            <div><label style="font-weight:bold;">Generasi (Bebas Angka/Teks):</label><input type="text" id="adm-generasi" value="${data.generasi || ''}" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
+            <div><label style="font-weight:bold;">Generasi (Bebas Teks):</label><input type="text" id="adm-generasi" value="${data.generasi || ''}" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
             <div><label style="font-weight:bold;">Tanggal Lahir:</label><input type="date" id="adm-tgl-lahir" value="${data.tanggal_lahir || ''}" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
             <div><label style="font-weight:bold;">Gol. Darah:</label><input type="text" id="adm-goldar" value="${data.golongan_darah || ''}" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
             <div><label style="font-weight:bold;">Tinggi Badan:</label><input type="text" id="adm-tinggi" value="${data.tinggi_badan || ''}" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
             <div><label style="font-weight:bold;">Tanggal Masuk JKT48:</label><input type="date" id="adm-tgl-masuk" value="${data.tanggal_masuk || ''}" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
             <div><label style="font-weight:bold;">Tanggal Keluar/Grad:</label><input type="date" id="adm-tgl-keluar" value="${data.tanggal_keluar || ''}" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
-            <div><label style="font-weight:bold;">Alasan Keluar (Misal: Lulus/Resign):</label><input type="text" id="adm-alasan-keluar" value="${data.alasan_keluar || ''}" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
+            <div><label style="font-weight:bold;">Alasan Keluar (Lulus/Resign):</label><input type="text" id="adm-alasan-keluar" value="${data.alasan_keluar || ''}" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
             <div style="grid-column: 1 / -1;"><label style="font-weight:bold;">Catchphrase / Jikoshoukai:</label><textarea id="adm-catchphrase" rows="2" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-family:inherit;">${data.catchphrase || ''}</textarea></div>
         </div>
-        <div style="text-align:right; margin-top:15px;">
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+            <button onclick="adminHapusMemberData('${currentAdminMemberId}')" style="padding: 8px 20px; background: #e53935; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">Hapus Member Ini</button>
             <button onclick="adminSimpanProfil()" style="padding: 8px 20px; background: #d81b60; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">Simpan Perubahan Profil</button>
         </div>
     `;
@@ -73,6 +135,7 @@ async function adminSimpanProfil() {
     if (error) alert('Gagal simpan profil: ' + error.message);
     else {
         alert('Profil berhasil diperbarui!');
+        dataSemuaMember = []; // Hapus cache agar sinkron
         muatDetailMemberById(currentAdminMemberId); // Refresh halaman
     }
 }
@@ -190,6 +253,13 @@ async function muatDaftarMember() {
     const containerVirtual = document.getElementById('list-member-virtual');
     const loading = document.getElementById('loading-member');
     
+    // Toggle Tambah Member Admin
+    const adminToggle = document.getElementById('admin-member-toggle');
+    if (adminToggle) {
+        if (isLocalhost()) adminToggle.style.display = 'block';
+        else adminToggle.style.display = 'none';
+    }
+    
     if(dataSemuaMember.length > 0) { loading.style.display = 'none'; return; }
 
     const { data, error } = await supabaseClient.from('members').select('*').order('nama', { ascending: true });
@@ -199,6 +269,9 @@ async function muatDaftarMember() {
 
     dataSemuaMember = data; 
     
+    // Reset kontainer jika direload
+    containerLove.innerHTML = ''; containerDream.innerHTML = ''; containerPassion.innerHTML = ''; containerTrainee.innerHTML = ''; containerVirtual.innerHTML = '';
+
     document.getElementById('title-love').style.display = 'block';
     document.getElementById('title-dream').style.display = 'block';
     document.getElementById('title-passion').style.display = 'block';
@@ -207,9 +280,12 @@ async function muatDaftarMember() {
     
     data.forEach(member => {
         const statusMember = (member.status || '').toLowerCase();
-        const isKeluar = statusMember.includes('graduated') || statusMember.includes('lulus') || statusMember.includes('resign') || statusMember.includes('mengundurkan diri') || statusMember.includes('dismissed') || statusMember.includes('dikeluarkan');
+        
+        // Cek jika member punya tanggal keluar, maka otomatis dianggap keluar/graduated
+        const hasTanggalKeluar = member.tanggal_keluar && member.tanggal_keluar.trim() !== '';
+        const isKeluar = hasTanggalKeluar || statusMember.includes('graduated') || statusMember.includes('lulus') || statusMember.includes('resign') || statusMember.includes('mengundurkan diri') || statusMember.includes('dismissed') || statusMember.includes('dikeluarkan');
                          
-        if (isKeluar) return; 
+        if (isKeluar) return; // Jangan tampilkan di halaman active members
         
         const namaUtama = member.nama_lengkap || member.nama;
         const namaDuaBaris = formatNamaDuaBaris(namaUtama);
@@ -278,6 +354,221 @@ async function muatDaftarMember() {
         else if (namaTim.includes('virtual')) containerVirtual.appendChild(card);
         else containerTrainee.appendChild(card);
     });
+}
+
+// ============================================================================
+// --- RENDER DETAIL MEMBER ---
+// ============================================================================
+function tampilkanDetailMemberDariData(member) {
+    bukaHalaman('view-member-detail');
+    const container = document.getElementById('info-detail-member');
+    
+    const infoStatus = getFormatStatusMember(member.status); 
+    const statusMember = (member.status || '').toLowerCase();
+    const hasTanggalKeluar = member.tanggal_keluar && member.tanggal_keluar.trim() !== '';
+    const isGraduated = hasTanggalKeluar || statusMember.includes('graduated') || statusMember.includes('lulus') || statusMember.includes('resign') || statusMember.includes('mengundurkan diri') || statusMember.includes('dismissed') || statusMember.includes('dikeluarkan') || statusMember.includes('canceled');
+    
+    let labelStatus = isGraduated && !statusMember.includes('resign') && !statusMember.includes('dismissed') ? { kelas: 'status-graduated', teks: 'Graduated' } : infoStatus;
+    
+    // PANEL ADMIN LOKAL DI-SUNTIKKAN KE SINI
+    let adminPanelHtml = '';
+    if (isLocalhost()) {
+        adminPanelHtml = `
+            <div style="text-align: center; margin-bottom: 25px; border-bottom: 1px dashed #d81b60; padding-bottom: 20px;">
+                <button onclick="toggleAdminMember('${member.id}')" style="background: #333; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; border: 2px solid #d81b60; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">&#9881;&#65039; Edit Profil & History (Mode Admin)</button>
+            </div>
+            <div id="admin-member-area" style="display: none; background: #fff; padding: 25px; border-radius: 12px; margin-bottom: 30px; border: 2px solid #d81b60; box-shadow: 0 5px 15px rgba(216, 27, 96, 0.15); text-align: left;">
+                <h3 style="color: #d81b60; text-align: center; margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px;">&#128100; Edit Profil Member</h3>
+                <div id="admin-profil-container">Memuat data profil...</div>
+                
+                <h3 style="color: #d81b60; text-align: center; margin-top: 35px; border-bottom: 1px solid #eee; padding-bottom: 10px;">&#128214; Edit Team History</h3>
+                <div id="admin-history-container">Memuat data history...</div>
+            </div>
+        `;
+    }
+
+    let memberSosmedHtml = '';
+    if (member.twitter || member.instagram || member.tiktok || member.threads || member.showroom || member.idn_live) {
+        memberSosmedHtml += `<div style="display:flex; gap:12px; justify-content:center; margin-bottom: 25px; flex-wrap: wrap;">`;
+        if(member.twitter) memberSosmedHtml += `<a href="${member.twitter}" target="_blank" class="icon-social bg-x" title="X / Twitter"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/x.svg" alt="X"></a>`;
+        if(member.instagram) memberSosmedHtml += `<a href="${member.instagram}" target="_blank" class="icon-social bg-ig" title="Instagram"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/instagram.svg" alt="IG"></a>`;
+        if(member.tiktok) memberSosmedHtml += `<a href="${member.tiktok}" target="_blank" class="icon-social bg-tt" title="TikTok"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/tiktok.svg" alt="TikTok"></a>`;
+        if(member.threads) memberSosmedHtml += `<a href="${member.threads}" target="_blank" class="icon-social bg-threads" title="Threads"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/threads.svg" alt="Threads"></a>`;
+        if(member.showroom) memberSosmedHtml += `<a href="${member.showroom}" target="_blank" class="icon-social" title="Showroom"><img src="https://www.google.com/s2/favicons?domain=showroom-live.com&sz=128" class="img-native" alt="SR"></a>`;
+        if(member.idn_live) memberSosmedHtml += `<a href="${member.idn_live}" target="_blank" class="icon-social" title="IDN Live"><img src="https://www.google.com/s2/favicons?domain=idn.app&sz=128" class="img-native" alt="IDN"></a>`;
+        memberSosmedHtml += `</div>`;
+    }
+
+    let fanbaseSosmedHtml = '';
+    if (member.fanbase_twitter || member.fanbase_instagram || member.fanbase_tiktok || member.fanbase_linktree) {
+        if(member.fanbase_twitter) fanbaseSosmedHtml += `<a href="${member.fanbase_twitter}" target="_blank" class="icon-social small bg-x" title="Fanbase Twitter / X"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/x.svg" alt="X"></a>`;
+        if(member.fanbase_instagram) fanbaseSosmedHtml += `<a href="${member.fanbase_instagram}" target="_blank" class="icon-social small bg-ig" title="Fanbase Instagram"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/instagram.svg" alt="IG"></a>`;
+        if(member.fanbase_tiktok) fanbaseSosmedHtml += `<a href="${member.fanbase_tiktok}" target="_blank" class="icon-social small bg-tt" title="Fanbase TikTok"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/tiktok.svg" alt="TikTok"></a>`;
+        if(member.fanbase_linktree) fanbaseSosmedHtml += `<a href="${member.fanbase_linktree}" target="_blank" class="icon-social small bg-linktree" title="Fanbase Linktree"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/linktree.svg" alt="Linktree"></a>`;
+    }
+
+    let badgesHtml = '';
+    badgesHtml += `<span class="status-badge ${labelStatus.kelas}">${labelStatus.teks}</span>`;
+    
+    if (member.team && !isGraduated) {
+        const customColor = getTeamColor(member.team);
+        let inlineStyle = customColor ? `background-color: ${customColor};` : `background-color: rgb(196, 120, 120);`;
+        if (!(labelStatus.teks === 'Trainee' && member.team.toLowerCase().includes('trainee'))) badgesHtml += `<span class="status-badge" style="${inlineStyle}">${member.team}</span>`;
+    }
+    if (member.generasi) {
+        const angkaGen = String(member.generasi).replace(/\D/g, ''); 
+        badgesHtml += `<span class="status-badge" style="background-color: #9c27b0;">Gen ${angkaGen}</span>`;
+    }
+    if (isBirthdayToday(member.tanggal_lahir)) badgesHtml += `<span class="status-badge" style="background-color: #e91e63; font-size: 0.85em; box-shadow: 0 0 10px rgba(233, 30, 99, 0.4);">&#127874; HAPPY BIRTHDAY!</span>`;
+
+    // CATCHPHRASE KOTAK LAMA
+    let catchphraseHtml = '';
+    if (member.catchphrase && member.catchphrase.trim() !== '') catchphraseHtml = `<div class="catchphrase-box">"${member.catchphrase}"</div>`;
+
+    // 5. FOTO PROFIL (50% DARI 407x500 = 204x250)
+    const customColor = getTeamColor(member.team);
+    let borderColor = customColor || (isGraduated ? '#666' : '#d81b60');
+    let fotoprofilStyle = `width: 204px; height: 250px; object-fit: cover; border-radius: 15px; border: 4px solid ${borderColor}; box-shadow: 0 4px 10px rgba(0,0,0,0.15);`;
+    if (isGraduated) fotoprofilStyle += ` filter: grayscale(80%); opacity: 0.9;`;
+
+    const imgHtml = generateMemberImageHtml(member, '204px', '250px', null, fotoprofilStyle, 'foto-profil');
+
+    // TABEL BIODATA DASHED K-POP PORTAL STYLE
+    let tglLahirFormatted = member.tanggal_lahir || '-';
+    if (member.tanggal_lahir && member.tanggal_lahir.includes('-') && member.tanggal_lahir.split('-')[0].length === 4) {
+        tglLahirFormatted = formatTanggalIndo(member.tanggal_lahir);
+    }
+
+    let tbodyHtml = '';
+    const tdLabel = `font-weight:bold; color:#555; padding:12px 15px 12px 0; border-bottom:1px dashed #ccc; width:35%; vertical-align:middle;`;
+    const tdValue = `padding:12px 0; border-bottom:1px dashed #ccc; color:#333; text-align:left;`;
+
+    let fanbaseVal = `<span style="color:#d81b60; font-weight:bold; margin-right: 5px;">${member.nama_fanbase || '-'}</span>${fanbaseSosmedHtml}`;
+    tbodyHtml += `<tr><td style="${tdLabel}">Nama Fanbase</td><td style="${tdValue} display:flex; align-items:center; flex-wrap:wrap;">${fanbaseVal}</td></tr>`;
+    tbodyHtml += `<tr><td style="${tdLabel}">Nama Panggilan</td><td style="${tdValue}">${member.nama_panggilan || '-'}</td></tr>`;
+    tbodyHtml += `<tr><td style="${tdLabel}">Tanggal Lahir</td><td style="${tdValue}">${tglLahirFormatted}</td></tr>`;
+    tbodyHtml += `<tr><td style="${tdLabel}">Gol. Darah</td><td style="${tdValue}">${member.golongan_darah || '-'}</td></tr>`;
+    tbodyHtml += `<tr><td style="${tdLabel}">Horoskop</td><td style="${tdValue}">${member.horoskop || '-'}</td></tr>`;
+    tbodyHtml += `<tr><td style="${tdLabel}">Tinggi Badan</td><td style="${tdValue}">${member.tinggi_badan || '-'}</td></tr>`;
+
+    if (member.tanggal_masuk) {
+        tbodyHtml += `<tr><td style="${tdLabel}">Tanggal Masuk</td><td style="${tdValue}">${formatTanggalIndo(member.tanggal_masuk)}</td></tr>`;
+    }
+
+    if (hasTanggalKeluar) {
+        let alasan = member.alasan_keluar ? ` <span style="color:#d32f2f; font-weight:bold; font-size:0.9em;">(${member.alasan_keluar})</span>` : '';
+        tbodyHtml += `<tr><td style="${tdLabel}">Tanggal Keluar</td><td style="${tdValue}">${formatTanggalIndo(member.tanggal_keluar)}${alasan}</td></tr>`;
+    }
+
+    let infoTabelHtml = `
+        <div style="background: #fff; padding: 0 20px; border-radius: 12px; border: 1px solid #eee; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin: 20px 0; width: 100%; text-align: left; box-sizing: border-box;">
+            <table style="width:100%; border-collapse: collapse; font-size: 0.95em;">
+                <tbody>
+                    ${tbodyHtml}
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    let jadwalMendatangHtml = '';
+    if (!isGraduated) {
+        jadwalMendatangHtml = `
+            <div style="margin-top: 45px; margin-bottom: 20px;">
+                <hr style="border: 0; height: 1px; background: #ddd; margin: 0 auto 20px auto;">
+                <h3 style="text-align:center; color:#d81b60; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px; font-size: 1em;">Jadwal Mendatang</h3>
+                <div id="loading-member-schedule" style="text-align: center; font-size: 0.85em; color:#666;">Memuat jadwal...</div>
+                <div class="list-container" id="list-member-schedule"></div>
+            </div>
+        `;
+    }
+
+    container.innerHTML = `
+        ${adminPanelHtml}
+        ${imgHtml}
+        <h2 style="margin-top:0; margin-bottom: 8px;">${member.nama_lengkap || member.nama}</h2>
+        <div style="text-align:center; margin-bottom:15px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">${badgesHtml}</div>
+        ${memberSosmedHtml}
+        ${catchphraseHtml}
+        
+        <div style="width: 100%;">
+            ${infoTabelHtml}
+
+            <div style="margin-top: 35px; margin-bottom: 20px;">
+                <hr style="border: 0; height: 1px; background: #ddd; margin: 0 auto 20px auto;">
+                <h3 style="text-align:center; color:#d81b60; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px; font-size: 1em;">&#128214; Team History</h3>
+                <div id="loading-member-history" style="text-align: center; font-size: 0.85em; color:#666;">Memuat riwayat...</div>
+                <div id="list-member-history"></div>
+            </div>
+            
+            ${jadwalMendatangHtml}
+            
+            <div style="margin-top: 45px; margin-bottom: 20px;">
+                <hr style="border: 0; height: 1px; background: #ddd; margin: 0 auto 20px auto;">
+                <h3 style="text-align:center; color:#d81b60; margin-bottom:5px; text-transform:uppercase; letter-spacing:1px; font-size: 1em;">Senbatsu Participation</h3>
+                <div id="loading-member-senbatsu" style="text-align: center; font-size: 0.85em; color:#666;">Memuat partisipasi...</div>
+                <div id="list-member-senbatsu"></div>
+            </div>
+        </div>
+    `;
+
+    muatHistoryMember(member.id);
+    if (!isGraduated) muatJadwalMember(member.id);
+    muatSenbatsuMember(member.id);
+}
+
+async function muatDetailMemberById(memberId) {
+    bukaHalaman('view-member-detail');
+    document.getElementById('info-detail-member').innerHTML = `<p style="text-align:center;">Memuat profil...</p>`;
+    const { data } = await supabaseClient.from('members').select('*').eq('id', memberId).single();
+    if (data) tampilkanDetailMemberDariData(data);
+}
+
+// ============================================================================
+// --- FUNGSI RENDER DETAIL TAMBAHAN (DIKEMBALIKAN KE GAYA ORIGINAL KOTAK) ---
+// ============================================================================
+
+async function muatHistoryMember(memberId) {
+    const container = document.getElementById('list-member-history');
+    const loading = document.getElementById('loading-member-history');
+    if (!container || !loading) return;
+
+    try {
+        const { data, error } = await supabaseClient.from('member_team_history').select(`*, teams(nama)`).eq('member_id', memberId).order('tanggal_mulai', { ascending: true });
+        loading.style.display = 'none';
+        if (error) throw error;
+        if (!data || data.length === 0) return container.innerHTML = `<p style="text-align:center; color:#999; font-style:italic; font-size: 0.9em;">Data riwayat tim belum tersedia.</p>`;
+
+        let historyHtml = '<div class="grid-team-history">';
+        data.forEach(h => {
+            const tglMulai = h.tanggal_mulai ? h.tanggal_mulai.split('-')[0] : '';
+            const tglSelesai = h.tanggal_selesai ? h.tanggal_selesai.split('-')[0] : 'Sekarang';
+            const namaTim = h.teams ? h.teams.nama : (h.catatan && h.catatan.includes('Academy') ? 'Academy' : 'JKT48');
+            
+            const namaFormatTim = namaTim.toLowerCase().replace(/\s+/g, '_');
+            const imgTimSrc = `images/teams/${namaFormatTim}.jpg`;
+            
+            let statusClass = 'status-active-team'; let statusText = 'Active';
+            if (h.status_keluar === 'Transferred') { statusClass = 'status-history-transferred'; statusText = 'Transferred'; }
+            else if (h.status_keluar === 'Graduated' || h.status_keluar === 'Resigned' || h.status_keluar === 'Dismissed' || h.status_keluar === 'Canceled') { statusClass = 'status-history-graduated'; statusText = h.status_keluar; }
+            else if (h.tanggal_selesai) { statusClass = 'status-history-transferred'; statusText = 'Moved'; }
+
+            let aksiKlik = h.team_id ? `onclick="klikTimDariHistory('${h.team_id}')" style="cursor: pointer;" title="Lihat profil ${namaTim}"` : `style="cursor: default;"`;
+
+            historyHtml += `
+                <div class="card-team-history" ${aksiKlik}>
+                    <img src="${imgTimSrc}" onerror="this.onerror=null; this.src='favicon.png';">
+                    <h4>${namaTim}</h4>
+                    <p>${tglMulai} - ${tglSelesai}</p>
+                    <div class="status-label ${statusClass}">${statusText}</div>
+                </div>
+            `;
+        });
+        historyHtml += '</div>';
+        container.innerHTML = historyHtml;
+    } catch (err) {
+        loading.style.display = 'none';
+        container.innerHTML = `<p style="color:red; text-align:center; font-size: 0.85em;">Gagal memuat riwayat: ${err.message}</p>`;
+    }
 }
 
 async function muatJadwalMember(memberId) {
@@ -367,61 +658,6 @@ async function muatJadwalMember(memberId) {
     }
 }
 
-async function muatHistoryMember(memberId) {
-    const container = document.getElementById('list-member-history');
-    const loading = document.getElementById('loading-member-history');
-    if (!container || !loading) return;
-
-    try {
-        const { data, error } = await supabaseClient.from('member_team_history').select(`*, teams(nama)`).eq('member_id', memberId).order('tanggal_mulai', { ascending: true });
-        loading.style.display = 'none';
-        if (error) throw error;
-        if (!data || data.length === 0) return container.innerHTML = `<p style="text-align:center; color:#999; font-style:italic; font-size: 0.9em;">Data riwayat tim belum tersedia.</p>`;
-
-        let historyHtml = '<div class="grid-team-history">';
-        data.forEach(h => {
-            const tglMulai = h.tanggal_mulai ? h.tanggal_mulai.split('-')[0] : '';
-            const tglSelesai = h.tanggal_selesai ? h.tanggal_selesai.split('-')[0] : 'Sekarang';
-            const namaTim = h.teams ? h.teams.nama : (h.catatan && h.catatan.includes('Academy') ? 'Academy' : 'JKT48');
-            
-            const namaFormatTim = namaTim.toLowerCase().replace(/\s+/g, '_');
-            const imgTimSrc = `images/teams/${namaFormatTim}.jpg`;
-            
-            let statusClass = 'status-active-team'; let statusText = 'Active';
-            if (h.status_keluar === 'Transferred') { statusClass = 'status-history-transferred'; statusText = 'Transferred'; }
-            else if (h.status_keluar === 'Graduated' || h.status_keluar === 'Resigned' || h.status_keluar === 'Dismissed' || h.status_keluar === 'Canceled') { statusClass = 'status-history-graduated'; statusText = h.status_keluar; }
-            else if (h.tanggal_selesai) { statusClass = 'status-history-transferred'; statusText = 'Moved'; }
-
-            let aksiKlik = h.team_id ? `onclick="klikTimDariHistory('${h.team_id}')" style="cursor: pointer;" title="Lihat profil ${namaTim}"` : `style="cursor: default;"`;
-
-            historyHtml += `
-                <div class="card-team-history" ${aksiKlik}>
-                    <img src="${imgTimSrc}" onerror="this.onerror=null; this.src='favicon.png';">
-                    <h4>${namaTim}</h4>
-                    <p>${tglMulai} - ${tglSelesai}</p>
-                    <div class="status-label ${statusClass}">${statusText}</div>
-                </div>
-            `;
-        });
-        historyHtml += '</div>';
-        container.innerHTML = historyHtml;
-    } catch (err) {
-        loading.style.display = 'none';
-        container.innerHTML = `<p style="color:red; text-align:center; font-size: 0.85em;">Gagal memuat riwayat: ${err.message}</p>`;
-    }
-}
-
-async function klikTimDariHistory(teamId) {
-    if (!teamId) return;
-    if (typeof dataSemuaTeam !== 'undefined' && dataSemuaTeam.length === 0) {
-        if(typeof muatDaftarTeam === 'function') await muatDaftarTeam(); 
-    }
-    if(typeof muatDetailTeam === 'function') {
-        muatDetailTeam(teamId);
-        window.scrollTo(0, 0);
-    }
-}
-
 async function muatSenbatsuMember(memberId) {
     const container = document.getElementById('list-member-senbatsu');
     const loading = document.getElementById('loading-member-senbatsu');
@@ -488,131 +724,4 @@ async function muatSenbatsuMember(memberId) {
         loading.style.display = 'none';
         container.innerHTML = `<p style="color:red; text-align:center; font-size: 0.85em;">Gagal memuat partisipasi: ${err.message}</p>`;
     }
-}
-
-function tampilkanDetailMemberDariData(member) {
-    bukaHalaman('view-member-detail');
-    const container = document.getElementById('info-detail-member');
-    const infoStatus = getFormatStatusMember(member.status); 
-    
-    const statusMember = (member.status || '').toLowerCase();
-    const isGraduated = statusMember.includes('graduated') || statusMember.includes('lulus') || statusMember.includes('resign') || statusMember.includes('mengundurkan diri') || statusMember.includes('dismissed') || statusMember.includes('dikeluarkan');
-    
-    // PANEL ADMIN LOKAL DI-SUNTIKKAN KE SINI
-    let adminPanelHtml = '';
-    if (isLocalhost()) {
-        adminPanelHtml = `
-            <div style="text-align: center; margin-bottom: 25px; border-bottom: 1px dashed #d81b60; padding-bottom: 20px;">
-                <button onclick="toggleAdminMember('${member.id}')" style="background: #333; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; border: 2px solid #d81b60; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">&#9881;&#65039; Edit Profil & History (Mode Admin)</button>
-            </div>
-            <div id="admin-member-area" style="display: none; background: #fff; padding: 25px; border-radius: 12px; margin-bottom: 30px; border: 2px solid #d81b60; box-shadow: 0 5px 15px rgba(216, 27, 96, 0.15); text-align: left;">
-                <h3 style="color: #d81b60; text-align: center; margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px;">&#128100; Edit Profil Member</h3>
-                <div id="admin-profil-container">Memuat data profil...</div>
-                
-                <h3 style="color: #d81b60; text-align: center; margin-top: 35px; border-bottom: 1px solid #eee; padding-bottom: 10px;">&#128214; Edit Team History</h3>
-                <div id="admin-history-container">Memuat data history...</div>
-            </div>
-        `;
-    }
-
-    let memberSosmedHtml = '';
-    if (member.twitter || member.instagram || member.tiktok || member.threads || member.showroom || member.idn_live) {
-        memberSosmedHtml += `<div style="display:flex; gap:12px; justify-content:center; margin-bottom: 25px; flex-wrap: wrap;">`;
-        if(member.twitter) memberSosmedHtml += `<a href="${member.twitter}" target="_blank" class="icon-social bg-x" title="X / Twitter"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/x.svg" alt="X"></a>`;
-        if(member.instagram) memberSosmedHtml += `<a href="${member.instagram}" target="_blank" class="icon-social bg-ig" title="Instagram"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/instagram.svg" alt="IG"></a>`;
-        if(member.tiktok) memberSosmedHtml += `<a href="${member.tiktok}" target="_blank" class="icon-social bg-tt" title="TikTok"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/tiktok.svg" alt="TikTok"></a>`;
-        if(member.threads) memberSosmedHtml += `<a href="${member.threads}" target="_blank" class="icon-social bg-threads" title="Threads"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/threads.svg" alt="Threads"></a>`;
-        if(member.showroom) memberSosmedHtml += `<a href="${member.showroom}" target="_blank" class="icon-social" title="Showroom"><img src="https://www.google.com/s2/favicons?domain=showroom-live.com&sz=128" class="img-native" alt="SR"></a>`;
-        if(member.idn_live) memberSosmedHtml += `<a href="${member.idn_live}" target="_blank" class="icon-social" title="IDN Live"><img src="https://www.google.com/s2/favicons?domain=idn.app&sz=128" class="img-native" alt="IDN"></a>`;
-        memberSosmedHtml += `</div>`;
-    }
-
-    let fanbaseSosmedHtml = '';
-    if (member.fanbase_twitter || member.fanbase_instagram || member.fanbase_tiktok || member.fanbase_linktree) {
-        if(member.fanbase_twitter) fanbaseSosmedHtml += `<a href="${member.fanbase_twitter}" target="_blank" class="icon-social small bg-x" title="Fanbase Twitter / X"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/x.svg" alt="X"></a>`;
-        if(member.fanbase_instagram) fanbaseSosmedHtml += `<a href="${member.fanbase_instagram}" target="_blank" class="icon-social small bg-ig" title="Fanbase Instagram"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/instagram.svg" alt="IG"></a>`;
-        if(member.fanbase_tiktok) fanbaseSosmedHtml += `<a href="${member.fanbase_tiktok}" target="_blank" class="icon-social small bg-tt" title="Fanbase TikTok"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/tiktok.svg" alt="TikTok"></a>`;
-        if(member.fanbase_linktree) fanbaseSosmedHtml += `<a href="${member.fanbase_linktree}" target="_blank" class="icon-social small bg-linktree" title="Fanbase Linktree"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/linktree.svg" alt="Linktree"></a>`;
-    }
-
-    let badgesHtml = '';
-    badgesHtml += `<span class="status-badge ${infoStatus.kelas}">${infoStatus.teks}</span>`;
-    if (member.team && !isGraduated) {
-        const customColor = getTeamColor(member.team);
-        let inlineStyle = customColor ? `background-color: ${customColor};` : `background-color: rgb(196, 120, 120);`;
-        if (!(infoStatus.teks === 'Trainee' && member.team.toLowerCase().includes('trainee'))) badgesHtml += `<span class="status-badge" style="${inlineStyle}">${member.team}</span>`;
-    }
-    if (member.generasi) {
-        const angkaGen = String(member.generasi).replace(/\D/g, ''); 
-        badgesHtml += `<span class="status-badge" style="background-color: #9c27b0;">Gen ${angkaGen}</span>`;
-    }
-    if (isBirthdayToday(member.tanggal_lahir)) badgesHtml += `<span class="status-badge" style="background-color: #e91e63; font-size: 0.85em; box-shadow: 0 0 10px rgba(233, 30, 99, 0.4);">&#127874; HAPPY BIRTHDAY!</span>`;
-
-    let catchphraseHtml = '';
-    if (member.catchphrase && member.catchphrase.trim() !== '') catchphraseHtml = `<div class="catchphrase-box">"${member.catchphrase}"</div>`;
-
-    let jadwalMendatangHtml = '';
-    if (!isGraduated) {
-        jadwalMendatangHtml = `
-            <div style="margin-top: 45px; margin-bottom: 10px;">
-                <hr style="border: 0; height: 1px; background: #ddd; margin: 0 auto 20px auto;">
-                <h3 style="text-align:center; color:#d81b60; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px; font-size: 1em;">Jadwal Mendatang</h3>
-                <div id="loading-member-schedule" style="text-align: center; font-size: 0.85em; color:#666;">Memuat jadwal...</div>
-                <div class="list-container" id="list-member-schedule"></div>
-            </div>
-        `;
-    }
-    
-    let tanggalMasukHtml = member.tanggal_masuk ? `<p><strong>Tanggal Masuk JKT48:</strong> ${formatTanggalIndo(member.tanggal_masuk)}</p>` : '';
-    let tanggalKeluarHtml = '';
-    if (member.tanggal_keluar) {
-        let alasan = member.alasan_keluar ? ` (${member.alasan_keluar})` : '';
-        tanggalKeluarHtml = `<p><strong>Tanggal Keluar:</strong> ${formatTanggalIndo(member.tanggal_keluar)} <span style="color:#d32f2f; font-weight:bold; font-size:0.9em;">${alasan}</span></p>`;
-    }
-
-    const imgHtml = generateMemberImageHtml(member, null, null, null, '', 'foto-profil');
-
-    container.innerHTML = `
-        ${adminPanelHtml}
-        ${imgHtml}
-        <h2 style="margin-top:0; margin-bottom: 8px;">${member.nama_lengkap || member.nama}</h2>
-        <div style="text-align:center; margin-bottom:15px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">${badgesHtml}</div>
-        ${memberSosmedHtml}
-        ${catchphraseHtml}
-        <div style="display:flex; align-items:center; flex-wrap:wrap; border-bottom: 1px solid #eee; padding-bottom: 5px; margin: 10px 0;">
-            <strong style="margin-right: 5px;">Nama Fanbase:</strong> <span style="color:#d81b60; font-weight:bold; margin-right: 5px;">${member.nama_fanbase || '-'}</span>${fanbaseSosmedHtml}
-        </div>
-        <p><strong>Nama Panggilan:</strong> ${member.nama_panggilan || '-'}</p>
-        <p><strong>Tanggal Lahir:</strong> ${member.tanggal_lahir || '-'}</p>
-        <p><strong>Gol. Darah:</strong> ${member.golongan_darah || '-'}</p>
-        <p><strong>Horoskop:</strong> ${member.horoskop || '-'}</p>
-        <p><strong>Tinggi Badan:</strong> ${member.tinggi_badan || '-'}</p>
-        ${tanggalMasukHtml}
-        ${tanggalKeluarHtml}
-
-        <div style="margin-top: 35px; margin-bottom: 20px;">
-            <hr style="border: 0; height: 1px; background: #ddd; margin: 0 auto 20px auto;">
-            <h3 style="text-align:center; color:#d81b60; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px; font-size: 1em;">&#128214; Team History</h3>
-            <div id="loading-member-history" style="text-align: center; font-size: 0.85em; color:#666;">Memuat riwayat...</div>
-            <div id="list-member-history"></div>
-        </div>
-        ${jadwalMendatangHtml}
-        <div style="margin-top: 45px; margin-bottom: 20px;">
-            <hr style="border: 0; height: 1px; background: #ddd; margin: 0 auto 20px auto;">
-            <h3 style="text-align:center; color:#d81b60; margin-bottom:5px; text-transform:uppercase; letter-spacing:1px; font-size: 1em;">Senbatsu Participation</h3>
-            <div id="loading-member-senbatsu" style="text-align: center; font-size: 0.85em; color:#666;">Memuat partisipasi...</div>
-            <div id="list-member-senbatsu"></div>
-        </div>
-    `;
-
-    muatHistoryMember(member.id);
-    if (!isGraduated) muatJadwalMember(member.id);
-    muatSenbatsuMember(member.id);
-}
-
-async function muatDetailMemberById(memberId) {
-    bukaHalaman('view-member-detail');
-    document.getElementById('info-detail-member').innerHTML = `<p style="text-align:center;">Memuat profil...</p>`;
-    const { data } = await supabaseClient.from('members').select('*').eq('id', memberId).single();
-    if (data) tampilkanDetailMemberDariData(data);
 }

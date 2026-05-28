@@ -18,10 +18,32 @@
         <button id="btn-song" onclick="bukaHalaman('view-albums')">Discography</button>
         <button id="btn-team" onclick="bukaHalaman('view-teams')">Teams</button>
         <button id="btn-stage" onclick="bukaHalaman('view-stages')">Stages</button>
+        <button id="btn-generation" onclick="bukaHalaman('view-generations'); if(typeof muatDaftarGenerasi === 'function') muatDaftarGenerasi();">Generations</button>
+        <button id="btn-recap" style="display:none;" onclick="bukaHalaman('view-recaps')">Recaps</button>
+        <button id="btn-admin-menu" onclick="bukaHalaman('view-admin')" style="display:none; background:#ff9800; color:#fff; font-weight:bold;">Admin</button>
     </div>
 
     <div class="container">
         
+        <div id="view-admin" class="view-section">
+            <h2 style="color: #d81b60;">Administrator Panel</h2>
+            <div id="admin-login-box" style="max-width: 400px; margin: 40px auto; background: #fff; padding: 30px; border-radius: 12px; border: 2px dashed #d81b60; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                <div style="font-size: 3em; margin-bottom: 10px;">&#128274;</div>
+                <p style="margin-bottom: 20px; color: #555; font-weight:bold;">Masukkan password untuk membuka fitur Admin.</p>
+                <input type="password" id="admin-password" placeholder="Password..." style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; font-size: 1.1em; text-align:center;">
+                <button onclick="loginAdmin()" style="background: #d81b60; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1.1em; transition: 0.2s;" onmouseover="this.style.background='#ad1457'" onmouseout="this.style.background='#d81b60'">Login Masuk</button>
+                <p id="admin-login-msg" style="color: red; margin-top: 15px; display: none; font-size: 0.95em; font-weight:bold;">&#10060; Password salah!</p>
+            </div>
+            <div id="admin-dashboard" style="display: none; text-align: center; max-width: 600px; margin: 40px auto;">
+                <div style="background: #e8f5e9; padding: 30px; border-radius: 12px; border: 2px solid #2e7d32; color: #2e7d32; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                    <div style="font-size: 3em; margin-bottom: 10px;">&#128275;</div>
+                    <h3 style="margin-top:0;">Mode Admin Terbuka</h3>
+                    <p style="color:#1b5e20;">Seluruh tombol untuk menambah, mengubah, dan menghapus data (Schedule, Stages, Discography) sekarang sudah aktif di masing-masing halaman.</p>
+                </div>
+                <button onclick="logoutAdmin()" style="background: #444; color: white; border: none; padding: 12px 30px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1.1em; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">Kunci Kembali (Logout)</button>
+            </div>
+        </div>
+
         <div id="view-schedule" class="view-section active">
             <h2>Jadwal Teater & Event</h2>
             <div class="filter-box">
@@ -41,6 +63,55 @@
                 <button id="btn-filter-semua" onclick="filterTipeJadwal('Semua')" style="background-color: #444; margin-right: 5px;">Semua</button>
                 <button id="btn-filter-theater" onclick="filterTipeJadwal('Theater')" style="background-color: #d81b60; margin-right: 5px;">Teater</button>
                 <button id="btn-filter-event" onclick="filterTipeJadwal('Event')" style="background-color: #004080;">Event</button>
+            </div>
+
+            <div id="admin-schedule-toggle" style="display: none; text-align: center; margin-bottom: 20px; margin-top: 15px;">
+                <button onclick="toggleAdminSchedule()" style="background: #333; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; border: 2px solid #d81b60; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">&#9881;&#65039; Tambah Jadwal Baru (Mode Admin)</button>
+            </div>
+            
+            <div id="admin-schedule-area" style="display: none; background: #fff; padding: 20px; border-radius: 10px; margin-bottom: 25px; border: 2px dashed #d81b60; text-align:left;">
+                <h3 style="color: #d81b60; text-align: center; margin-top: 0;">Form Jadwal / Event Master</h3>
+                <input type="hidden" id="adm-sch-id">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; font-size: 0.9em;">
+                    <div style="grid-column: 1 / -1;"><label style="font-weight:bold; color:#444;">Judul Show/Event:</label><input type="text" id="adm-sch-judul" placeholder="Misal: Aturan Anti Cinta" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
+                    <div><label style="font-weight:bold; color:#444;">Tanggal & Waktu:</label><input type="datetime-local" id="adm-sch-waktu" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
+                    <div>
+                        <label style="font-weight:bold; color:#444;">Team Penyaji:</label>
+                        <select id="adm-sch-team" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;">
+                            <option value="JKT48">JKT48</option>
+                            <option value="Team J">Team J</option>
+                            <option value="Team KIII">Team KIII</option>
+                            <option value="Team T">Team T</option>
+                            <option value="Trainee">Trainee</option>
+                            <option value="Academy Class A">Academy Class A</option>
+                            <option value="Team Love">Team Love</option>
+                            <option value="Team Dream">Team Dream</option>
+                            <option value="Team Passion">Team Passion</option>
+                        </select>
+                    </div>
+                    <div style="grid-column: 1 / -1;"><label style="font-weight:bold; color:#444;">Lokasi (Biarkan kosong untuk default JKT48 Theater):</label><input type="text" id="adm-sch-lokasi" placeholder="Misal: fX Sudirman F4" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
+                    <div>
+                        <label style="font-weight:bold; color:#444;">Tipe Jadwal:</label>
+                        <select id="adm-sch-tipe" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;">
+                            <option value="Theater">Theater</option>
+                            <option value="Event">Event</option>
+                        </select>
+                    </div>
+                    <div><label style="font-weight:bold; color:#444;">Tipe Sekunder (Opsional):</label><input type="text" id="adm-sch-sekunder" placeholder="Misal: OFC, Ramadan, Offair" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
+                    <div style="grid-column: 1 / -1;"><label style="font-weight:bold; color:#444;">URL Foto Event (Banner):</label><input type="text" id="adm-sch-foto" placeholder="Link gambar dokumentasi / poster" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
+                    <div style="display:flex; gap:25px; flex-wrap:wrap; font-size:0.95em; align-items: center; grid-column: 1 / -1; margin-top:10px;">
+                        <label style="cursor:pointer; display:flex; align-items:center; gap:5px; color:#00838f; font-weight:bold;">
+                            <input type="checkbox" id="adm-sch-shonichi" style="transform: scale(1.2);"> Shonichi
+                        </label>
+                        <label style="cursor:pointer; display:flex; align-items:center; gap:5px; color:#673ab7; font-weight:bold;">
+                            <input type="checkbox" id="adm-sch-senshuraku" style="transform: scale(1.2);"> Senshuraku
+                        </label>
+                    </div>
+                </div>
+                <div style="text-align:right; margin-top:15px;" id="adm-sch-btns">
+                    <button onclick="adminSimpanScheduleBaru()" style="padding: 10px 20px; background: #d81b60; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">Simpan Jadwal</button>
+                    <button id="btn-cancel-sch" onclick="adminBatalEditSchedule()" style="display:none; margin-left: 10px; padding: 10px 20px; background: #666; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">Batal</button>
+                </div>
             </div>
 
             <div id="loading-schedule" style="text-align: center;">Memuat jadwal...</div>
@@ -67,25 +138,22 @@
 
             <div id="admin-lineup-area" style="display: none; background: #fff; padding: 20px; border-radius: 10px; margin-top: 20px; border: 2px dashed #d81b60; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
                 <h3 style="color: #d81b60; text-align: center; margin-top: 0;">Manajemen Lineup Manual</h3>
-                
                 <div id="admin-status-jadwal" style="background:#e2e8f0; padding:15px; border-radius:5px; margin-bottom:15px;"></div>
-
                 <div style="margin-bottom: 15px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
                     <select id="admin-select-member" style="padding: 8px; border-radius: 5px; border: 1px solid #d81b60; outline: none; min-width: 250px;">
                         <option value="">-- Memuat daftar member... --</option>
                     </select>
                     <button onclick="adminTambahMember()" style="padding: 8px 20px; background: #28a745; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">+ Tambah</button>
                 </div>
-
                 <div style="overflow-x: auto;">
                     <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9em;">
                         <thead>
                             <tr style="background: #fce4ec; border-bottom: 2px solid #d81b60;">
                                 <th style="padding: 10px;">Nama Member</th>
-                                <th style="padding: 10px; text-align: center;" title="Center">&#128081; Center</th>
-                                <th style="padding: 10px; text-align: center;" title="Shonichi">&#10024; Shonichi</th>
-                                <th style="padding: 10px; text-align: center;" title="Seitansai">&#127874; STS</th>
-                                <th style="padding: 10px; text-align: center;" title="Last Show">&#127800; Grad</th>
+                                <th style="padding: 10px; text-align: center;">&#128081; Center</th>
+                                <th style="padding: 10px; text-align: center;">&#10024; Shonichi</th>
+                                <th style="padding: 10px; text-align: center;">&#127874; STS</th>
+                                <th style="padding: 10px; text-align: center;">&#127800; Grad</th>
                                 <th style="padding: 10px; text-align: center;">Aksi</th>
                             </tr>
                         </thead>
@@ -113,20 +181,41 @@
 
         <div id="view-member" class="view-section">
             <h2>Member JKT48</h2>
-            <div id="loading-member" style="text-align: center;">Memuat member...</div>
             
+            <div id="admin-member-toggle" style="display: none; text-align: center; margin-bottom: 20px; margin-top: 15px;">
+                <button onclick="toggleAdminAddMember()" style="background: #333; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; border: 2px solid #d81b60; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">&#9881;&#65039; Tambah Member Baru (Mode Admin)</button>
+            </div>
+            
+            <div id="admin-add-member-area" style="display: none; background: #fff; padding: 20px; border-radius: 10px; margin-bottom: 25px; border: 2px dashed #d81b60; text-align:left;">
+                <h3 style="color: #d81b60; text-align: center; margin-top: 0;">Form Tambah Member Baru</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; font-size: 0.9em;">
+                    <div style="grid-column: 1 / -1;"><label style="font-weight:bold; color:#444;">Nama Lengkap:</label><input type="text" id="adm-new-namalengkap" placeholder="Misal: Shani Indira Natio" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
+                    <div><label style="font-weight:bold; color:#444;">Nama Panggung (Wajib):</label><input type="text" id="adm-new-nama" placeholder="Misal: Shani Indira" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
+                    <div><label style="font-weight:bold; color:#444;">Panggilan:</label><input type="text" id="adm-new-panggilan" placeholder="Misal: Shani" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
+                    <div><label style="font-weight:bold; color:#444;">Generasi (Teks):</label><input type="text" id="adm-new-generasi" placeholder="Misal: 3 atau Gen 3" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
+                    <div><label style="font-weight:bold; color:#444;">Status:</label><input type="text" id="adm-new-status" placeholder="Misal: Anggota / Trainee" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
+                    <div><label style="font-weight:bold; color:#444;">Team:</label><input type="text" id="adm-new-team" placeholder="Misal: JKT48 / Trainee" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
+                    <div><label style="font-weight:bold; color:#444;">Tanggal Lahir:</label><input type="date" id="adm-new-tgl-lahir" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
+                    <div><label style="font-weight:bold; color:#444;">Golongan Darah:</label><input type="text" id="adm-new-goldar" placeholder="Misal: B" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
+                    <div><label style="font-weight:bold; color:#444;">Tinggi Badan:</label><input type="text" id="adm-new-tinggi" placeholder="Misal: 166 cm" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
+                    <div><label style="font-weight:bold; color:#444;">Tanggal Masuk JKT48:</label><input type="date" id="adm-new-tgl-masuk" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
+                    <div style="grid-column: 1 / -1;"><label style="font-weight:bold; color:#444;">Jikoshoukai / Catchphrase:</label><textarea id="adm-new-catchphrase" rows="2" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-family:inherit; margin-top:5px;"></textarea></div>
+                </div>
+                <div style="text-align:right; margin-top:15px;" id="adm-mem-btns">
+                    <button onclick="adminSimpanMemberBaru()" style="padding: 10px 20px; background: #d81b60; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">Simpan Member</button>
+                    <button onclick="adminBatalAddMember()" style="margin-left: 10px; padding: 10px 20px; background: #666; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">Batal</button>
+                </div>
+            </div>
+
+            <div id="loading-member" style="text-align: center;">Memuat member...</div>
             <div class="team-section-title" style="color: rgb(226, 7, 133); display:none;" id="title-love">Team Love</div>
             <div class="grid-members-mini" id="list-member-love" style="margin-bottom: 20px;"></div>
-            
             <div class="team-section-title" style="color: rgb(0, 164, 165); display:none;" id="title-dream">Team Dream</div>
             <div class="grid-members-mini" id="list-member-dream" style="margin-bottom: 20px;"></div>
-            
             <div class="team-section-title" style="color: rgb(246, 146, 32); display:none;" id="title-passion">Team Passion</div>
             <div class="grid-members-mini" id="list-member-passion" style="margin-bottom: 20px;"></div>
-            
             <div class="team-section-title" style="color: rgb(196, 120, 120); display:none;" id="title-trainee">Trainee</div>
             <div class="grid-members-mini" id="list-member-trainee" style="margin-bottom: 20px;"></div>
-
             <div class="team-section-title" style="color: rgb(3, 70, 192); display:none;" id="title-virtual">JKT48 Virtual</div>
             <div class="grid-members-mini" id="list-member-virtual" style="margin-bottom: 40px;"></div>
         </div>
@@ -155,16 +244,7 @@
                 <h3 style="color: #d81b60; text-align: center; margin-top: 0;">Tambah Diskografi Baru</h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; font-size: 0.9em;">
                     <div style="grid-column: 1 / -1;"><label style="font-weight:bold; color:#444;">Judul Album/Single:</label><input type="text" id="adm-alb-judul" placeholder="Misal: Mahagita" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
-                    <div>
-                        <label style="font-weight:bold; color:#444;">Tipe Rilis:</label>
-                        <select id="adm-alb-tipe" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;">
-                            <option value="Single">Single</option>
-                            <option value="Setlist">Setlist</option>
-                            <option value="Album">Album</option>
-                            <option value="Digital Single">Digital Single</option>
-                            <option value="Project">Project</option>
-                        </select>
-                    </div>
+                    <div><label style="font-weight:bold; color:#444;">Tipe Rilis:</label><select id="adm-alb-tipe" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"><option value="Single">Single</option><option value="Setlist">Setlist</option><option value="Album">Album</option><option value="Digital Single">Digital Single</option><option value="Project">Project</option></select></div>
                     <div><label style="font-weight:bold; color:#444;">Tanggal Rilis (Opsional):</label><input type="date" id="adm-alb-tgl" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
                     <div><label style="font-weight:bold; color:#444;">URL Cover (Square):</label><input type="text" id="adm-alb-cover" placeholder="Link Cover Art" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
                     <div><label style="font-weight:bold; color:#444;">URL Header (Landscape):</label><input type="text" id="adm-alb-header" placeholder="Link Header Banner" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
@@ -187,13 +267,11 @@
             
             <div id="admin-song-area" style="display: none; background: #f1f5f9; padding: 20px; border-radius: 10px; margin-bottom: 25px; border: 2px dashed #004080; text-align:left;">
                 <h4 style="color: #004080; margin-top: 0; margin-bottom: 10px;">&#9881;&#65039; Mode Admin: Tambah Lagu ke Tracklist</h4>
-                
                 <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px;">
                     <input type="number" id="adm-trk-no" placeholder="Track" style="width:80px; padding:8px; border:1px solid #ccc; border-radius:4px;">
                     <input list="adm-lagu-master-list" id="adm-trk-judul" placeholder="Cari / Ketik Judul Lagu Master Baru..." style="flex:1; min-width:200px; padding:8px; border:1px solid #ccc; border-radius:4px;">
                     <datalist id="adm-lagu-master-list"></datalist>
                 </div>
-                
                 <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
                     <div style="flex:1; min-width:150px;">
                         <label style="font-weight:bold; font-size:0.8em; color:#555;">Tipe Lagu (Jika Baru):</label>
@@ -206,11 +284,9 @@
                     </div>
                     <button onclick="adminTambahLaguKeAlbum()" style="padding: 9px 20px; background: #28a745; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; height: fit-content;">Simpan ke Tracklist</button>
                 </div>
-                <p style="margin:8px 0 0 0; font-size:0.75em; color:#666; font-style:italic;">*Jika judul yang diketik belum ada di Master Lagu, sistem otomatis akan membuatkannya sebagai lagu baru.</p>
             </div>
             
             <h4 id="teks-album-members" style="text-align:center; color:#d81b60; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px; font-size: 0.9em; display: none;">Senbatsu Members</h4>
-            
             <div id="loading-album-members" style="text-align: center; display: none; font-size: 0.9em; color:#666;">Memuat member...</div>
             <div class="album-members-container" id="list-album-members"></div>
             <hr id="garis-pemisah-album" style="border: 0; height: 1px; background: #f8bbd0; margin: 20px auto; max-width: 800px; display: none;">
@@ -231,7 +307,6 @@
 
         <div id="view-stages" class="view-section">
             <h2>Daftar Stages & Setlist Teater</h2>
-            
             <div id="admin-stage-toggle" style="display: none; text-align: center; margin-bottom: 20px;">
                 <button onclick="toggleAdminStage()" style="background: #333; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; border: 2px solid #d81b60; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">&#9881;&#65039; Tambah Stage Baru (Mode Admin)</button>
             </div>
@@ -250,6 +325,10 @@
                     <div><label style="font-weight:bold; color:#444;">URL Poster Stage:</label><input type="text" id="adm-stg-poster" placeholder="Link gambar potrait (Cover)" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
                     <div><label style="font-weight:bold; color:#444;">URL Foto Shonichi:</label><input type="text" id="adm-stg-foto-shonichi" placeholder="Link dokumentasi hari pertama" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
                     <div style="grid-column: 1 / -1;"><label style="font-weight:bold; color:#444;">URL Foto Senshuraku:</label><input type="text" id="adm-stg-foto-senshuraku" placeholder="Link dokumentasi last show" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
+
+                    <div><label style="font-weight:bold; color:#444;">URL Spotify:</label><input type="text" id="adm-stg-spotify" placeholder="Link Spotify (Album / Playlist)" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
+                    <div><label style="font-weight:bold; color:#444;">URL YT Music:</label><input type="text" id="adm-stg-youtube-music" placeholder="Link YouTube Music" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
+                    <div><label style="font-weight:bold; color:#444;">URL Apple Music:</label><input type="text" id="adm-stg-apple-music" placeholder="Link Apple Music" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px;"></div>
 
                     <div style="grid-column: 1 / -1;"><label style="font-weight:bold; color:#444;">General Info / Notes:</label><textarea id="adm-stg-catatan" rows="3" placeholder="Catatan tambahan..." style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-family:inherit; margin-top:5px;"></textarea></div>
                 </div>
@@ -289,6 +368,46 @@
             </div>
         </div>
 
+        <div id="view-generations" class="view-section">
+            <h2>Generasi JKT48</h2>
+            <div id="loading-generations" style="text-align: center;">Memuat daftar generasi...</div>
+            <div class="grid-container" id="list-generations"></div>
+        </div>
+
+        <div id="view-generation-detail" class="view-section">
+            <div class="detail-box" id="info-detail-generation" style="max-width: 900px;"></div>
+            <div style="text-align: center; margin-top: 35px;">
+                <button class="btn-back" onclick="bukaHalaman('view-generations')">&#11013; Kembali ke Daftar Generasi</button>
+            </div>
+        </div>
+
+        <div id="view-recaps" class="view-section">
+            <div id="recap-list-container">
+                <div id="recap-header">
+                    <h2 style="color: #d81b60; margin-bottom: 5px;">Recaps & Statistics</h2>
+                    <p style="text-align: center; color: #666; margin-top: 0; margin-bottom: 25px;">Kumpulan data statistik dan rekapitulasi teater JKT48.</p>
+                </div>
+                
+                <ul style="list-style:none; padding:0; margin:0 0 30px 0; background: #fff; border-radius: 8px; border: 1px solid #eee; padding: 15px;">
+                    <li style="padding: 12px 0; border-bottom: 1px dashed #e2e8f0; color: #444;">
+                        <div style="display: flex; align-items: center; flex-wrap: wrap;">
+                            <span style="color:#999; font-weight:bold; font-size:1.05em; width:30px; flex-shrink:0;">1.</span> 
+                            <a href="javascript:void(0)" onclick="if(typeof bukaRecap === 'function') bukaRecap('first_theater')" style="font-size:1.05em; font-weight:bold; color:#004080; text-decoration:none; transition:0.2s;" onmouseover="this.style.color='#d81b60'; this.style.textDecoration='underline'" onmouseout="this.style.color='#004080'; this.style.textDecoration='none'">Shonichi Setlist Theater Member JKT48</a> 
+                        </div>
+                        <div style="font-size:0.85em; color:#555; margin-left:30px; margin-top:5px; font-weight:600;">&#8618; &nbsp;Daftar debut/penampilan setlist pertama seluruh member di teater.</div>
+                    </li>
+                </ul>
+            </div>
+
+            <div id="recap-detail-container" style="display: none;">
+                <div id="loading-recaps" style="text-align: center; padding: 40px 0;">Memuat dan mengolah data rekapitulasi...</div>
+                <div id="content-recaps"></div>
+                <div style="text-align: center; margin-top: 35px;">
+                    <button class="btn-back" onclick="if(typeof kembaliKeDaftarRecap === 'function') kembaliKeDaftarRecap()">&#11013; Kembali ke Daftar Recap</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <div class="footer">
@@ -302,10 +421,61 @@
 
     <script src="config.js"></script>
     <script src="app.js"></script>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const isLocalEnv = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
+            
+            if (isLocalEnv) {
+                const btnAdminMenu = document.getElementById('btn-admin-menu');
+                if (btnAdminMenu) btnAdminMenu.style.display = 'inline-block';
+                const btnRecap = document.getElementById('btn-recap');
+                if (btnRecap) btnRecap.style.display = 'inline-block';
+            }
+            cekStatusAdmin();
+        });
+
+        function loginAdmin() {
+            const pass = document.getElementById('admin-password').value;
+            if (pass === 'adminjkt48') { 
+                localStorage.setItem('isAdminLoggedIn', 'true');
+                document.getElementById('admin-password').value = '';
+                document.getElementById('admin-login-msg').style.display = 'none';
+                alert('Berhasil Login! Seluruh Menu Tambah, Ubah, & Hapus telah dibuka.');
+                location.reload(); 
+            } else {
+                document.getElementById('admin-login-msg').style.display = 'block';
+            }
+        }
+
+        function logoutAdmin() {
+            localStorage.removeItem('isAdminLoggedIn');
+            alert('Mode Admin dikunci kembali.');
+            location.reload();
+        }
+
+        function cekStatusAdmin() {
+            const loginBox = document.getElementById('admin-login-box');
+            const dashboard = document.getElementById('admin-dashboard');
+            const isLocalEnv = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
+            const isLoggedIn = localStorage.getItem('isAdminLoggedIn') === 'true';
+            
+            if (isLocalEnv && isLoggedIn) {
+                if(loginBox) loginBox.style.display = 'none';
+                if(dashboard) dashboard.style.display = 'block';
+            } else {
+                if(loginBox) loginBox.style.display = 'block';
+                if(dashboard) dashboard.style.display = 'none';
+            }
+        }
+    </script>
+
     <script src="schedule.js"></script>
     <script src="member.js"></script>
     <script src="discography.js"></script>
     <script src="team.js"></script>
     <script src="stage.js"></script>
+    <script src="generation.js"></script>
+    <script src="recap.js"></script>
 </body>
 </html>

@@ -3,6 +3,19 @@ let filterJadwalAktif = 'Semua';
 let currentScheduleData = {};
 let isDropdownTahunSiap = false; 
 
+// Menyimpan cache warna agar tidak perlu bolak-balik query ke database
+window.mapWarnaTimCache = window.mapWarnaTimCache || null;
+
+// =================================================================================
+// PERBAIKAN: Tombol admin HANYA akan aktif jika di localhost DAN sudah berhasil login
+// Karena fungsi ini bersifat global, file stage.js & discography.js akan otomatis aman!
+// =================================================================================
+function isLocalhost() {
+    const isLocalEnv = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
+    const isLoggedIn = localStorage.getItem('isAdminLoggedIn') === 'true';
+    return isLocalEnv && isLoggedIn;
+}
+
 // --- FUNGSI MENGAMBIL RENTANG TAHUN OTOMATIS DARI DATABASE ---
 async function siapkanDropdownTahun() {
     if (isDropdownTahunSiap) return;
@@ -95,8 +108,16 @@ function filterTipeJadwal(tipe) {
 async function muatJadwalBerdasarkanBulan(tahun, bulan) {
     const container = document.getElementById('list-jadwal');
     const loading = document.getElementById('loading-schedule');
+    const adminToggle = document.getElementById('admin-schedule-toggle');
+    
     container.innerHTML = ''; loading.style.display = 'block';
     document.getElementById('nav-bulan').style.display = 'none';
+
+    // Toggle Jadwal Baru Admin
+    if (adminToggle) {
+        if (isLocalhost()) adminToggle.style.display = 'block';
+        else adminToggle.style.display = 'none';
+    }
     
     const awalBulan = new Date(tahun, bulan - 1, 1).toISOString();
     const akhirBulan = new Date(tahun, bulan, 0, 23, 59, 59).toISOString();
@@ -107,6 +128,17 @@ async function muatJadwalBerdasarkanBulan(tahun, bulan) {
         .gte('tanggal_waktu', awalBulan)
         .lte('tanggal_waktu', akhirBulan)
         .order('tanggal_waktu', { ascending: true });
+
+    // PERBAIKAN: Ambil cache warna tim dari database
+    if (!window.mapWarnaTimCache) {
+        const { data: dataTeams } = await supabaseClient.from('teams').select('nama, warna');
+        window.mapWarnaTimCache = {};
+        if (dataTeams) {
+            dataTeams.forEach(t => {
+                if (t.nama && t.warna) window.mapWarnaTimCache[t.nama.toLowerCase()] = t.warna;
+            });
+        }
+    }
 
     loading.style.display = 'none';
     if (error) return container.innerHTML = `<p style="color:red;">Gagal memuat jadwal: ${error.message}</p>`;
@@ -162,7 +194,8 @@ function renderJadwalKeLayar() {
         const namaTeam = namaTeamRaw.toUpperCase(); 
         const teamLower = namaTeamRaw.toLowerCase();
         
-        let warnaTeam = getTeamColor(teamLower) || '#d81b60'; 
+        // PERBAIKAN: Gunakan warna dari database cache jika ada, kalau tidak ada baru getTeamColor
+        let warnaTeam = (window.mapWarnaTimCache && window.mapWarnaTimCache[teamLower]) ? window.mapWarnaTimCache[teamLower] : (getTeamColor(teamLower) || '#d81b60');
 
         let warnaUtama = '#d81b60'; 
         if (tipeJadwal !== 'Theater') {
@@ -213,13 +246,25 @@ function renderJadwalKeLayar() {
 
         div.onclick = () => muatDetailJadwal(jadwal.id, judul, formatTanggal + ' | Pukul ' + formatJam, jadwal.lokasi, tipeJadwal, jadwal.foto_event, tipeSekunder);
         
+        // Admin Buttons - Tampil khusus localhost
+        let adminButtonsHtml = '';
+        if (isLocalhost()) {
+            adminButtonsHtml = `
+                <div style="margin-top: 10px; display:flex; gap:10px; flex-wrap:wrap;">
+                    <button onclick="event.stopPropagation(); adminEditSchedule('${jadwal.id}')" style="background:#ff9800; color:white; border:none; padding:4px 10px; border-radius:4px; font-size:0.8em; font-weight:bold; cursor:pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Ubah Data</button>
+                    <button onclick="event.stopPropagation(); adminHapusSchedule('${jadwal.id}')" style="background:#e53935; color:white; border:none; padding:4px 10px; border-radius:4px; font-size:0.8em; font-weight:bold; cursor:pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Hapus</button>
+                </div>
+            `;
+        }
+
         div.innerHTML = `
-            <div>
+            <div style="flex: 1;">
                 <div class="list-subtitle" style="margin-bottom: 5px; flex-wrap: wrap; gap: 3px;">${badgesHtml}</div>
                 <h3 class="list-title" style="color: ${warnaUtama}; font-size: 1.2em; margin: 0 0 5px 0;">${judul}</h3>
                 <div style="font-size: 0.85em; color: #666; font-weight: bold;">${formatTanggal} | Pukul ${formatJam}</div>
+                ${adminButtonsHtml}
             </div>
-            <div style="color: ${warnaUtama}; font-size: 24px;">&#10140;</div>
+            <div style="color: ${warnaUtama}; font-size: 24px; display: flex; align-items: center; justify-content: flex-end; padding-left: 15px;">&#10140;</div>
         `;
         container.appendChild(div);
     });
@@ -234,11 +279,22 @@ async function muatDetailJadwal(scheduleId, judul, waktu, lokasi, tipeJadwal, fo
     
     if (typeof siapkanAdminPanel === "function") siapkanAdminPanel(scheduleId);
     
+    if (!window.mapWarnaTimCache) {
+        const { data: dataTeams } = await supabaseClient.from('teams').select('nama, warna');
+        window.mapWarnaTimCache = {};
+        if (dataTeams) {
+            dataTeams.forEach(t => {
+                if (t.nama && t.warna) window.mapWarnaTimCache[t.nama.toLowerCase()] = t.warna;
+            });
+        }
+    }
+
     // Tarik data tim dari tabel schedule agar warna akurat sesuai dengan Badge list jadwal
     const { data: schedData } = await supabaseClient.from('theater_schedules').select('team').eq('id', scheduleId).single();
     let teamLower = schedData && schedData.team ? schedData.team.toLowerCase() : judul.toLowerCase();
     
-    let warnaTema = getTeamColor(teamLower) || '#d81b60'; 
+    // PERBAIKAN: Gunakan warna dari database cache jika ada
+    let warnaTema = (window.mapWarnaTimCache && window.mapWarnaTimCache[teamLower]) ? window.mapWarnaTimCache[teamLower] : (getTeamColor(teamLower) || '#d81b60');
     
     let tipeJudulFoto = 'Foto Teater';
     const elTeksMember = document.getElementById('teks-performing-members');
@@ -261,7 +317,6 @@ async function muatDetailJadwal(scheduleId, judul, waktu, lokasi, tipeJadwal, fo
     elJudul.style.color = warnaTema;
 
     elWaktu.innerText = waktu;
-    // --- PERBAIKAN: WAKTU TETAP DEFAULT/HITAM/ABU-ABU ---
     elWaktu.style.color = '#666';
 
     elLokasi.innerHTML = `&#128205; ${lokasi || 'JKT48 Theater, fX Sudirman'}`;
@@ -304,8 +359,22 @@ async function muatDetailJadwal(scheduleId, judul, waktu, lokasi, tipeJadwal, fo
     } else {
         let validMembersData = data.filter(item => item && item.members);
 
-        if (tipeJadwal !== 'Theater') {
-            validMembersData.sort((a, b) => {
+        // ========================================================================
+        // LOGIKA SORTING GLOBAL (BERLAKU UNTUK TEATER MAUPUN EVENT)
+        // ========================================================================
+        validMembersData.sort((a, b) => {
+            // 1. Urutkan berdasarkan Blocking (Ascending)
+            const blockA = (a.blocking !== null && a.blocking !== '') ? Number(a.blocking) : 9999;
+            const blockB = (b.blocking !== null && b.blocking !== '') ? Number(b.blocking) : 9999;
+            if (blockA !== blockB) return blockA - blockB;
+
+            // 2. Prioritaskan Center jika blocking sama (atau sama-sama kosong)
+            const centerA = a.is_center ? 1 : 0;
+            const centerB = b.is_center ? 1 : 0;
+            if (centerA !== centerB) return centerB - centerA;
+
+            // 3. Khusus Event, pisahkan Trainee di antrean belakang
+            if (tipeJadwal !== 'Theater') {
                 const statusA = (a.members.status || 'Anggota').toLowerCase();
                 const statusB = (b.members.status || 'Anggota').toLowerCase();
                 const isTraineeA = statusA.includes('trainee') ? 1 : 0;
@@ -317,9 +386,15 @@ async function muatDetailJadwal(scheduleId, judul, waktu, lokasi, tipeJadwal, fo
                     const genB = Number(b.members.generasi) || 999;
                     if (genA !== genB) return genA - genB; 
                 }
-                return (a.members.nama || '').localeCompare(b.members.nama || '');
-            });
-        }
+            }
+
+            // 4. FIX: Urutkan berdasarkan Nama Lengkap Anggota (Ascending A-Z)
+            // Ini akan memastikan Abigail Rachel selalu di atas Angelina Christy
+            const namaA = a.members.nama ? a.members.nama.toLowerCase() : '';
+            const namaB = b.members.nama ? b.members.nama.toLowerCase() : '';
+            
+            return namaA.localeCompare(namaB);
+        });
 
         if (validMembersData.length === 12) container.style.maxWidth = '750px';
         else container.style.maxWidth = '1000px'; 
@@ -339,9 +414,11 @@ async function muatDetailJadwal(scheduleId, judul, waktu, lokasi, tipeJadwal, fo
             if (item.is_shonichi) activeEvents.push({ name: 'SHONICHI', icon: '&#10024;', color1: '#00bcd4', color2: '#00838f', textColor: '#00838f' });
 
             let floatingIcons = ''; let floatBadge = ''; let h3Style = '';
-            let warnaTimTampil = getTeamColor(member.team) || warnaTema;
+            
+            // PERBAIKAN WARNA TIM MEMBER: Gunakan cache database jika ada
+            const mbrTeamLower = (member.team || '').toLowerCase();
+            let warnaTimTampil = (window.mapWarnaTimCache && window.mapWarnaTimCache[mbrTeamLower]) ? window.mapWarnaTimCache[mbrTeamLower] : (getTeamColor(member.team) || warnaTema);
 
-            // --- PERBAIKAN UI: BADGE SATU BARIS RAPI SEPERTI MEMBER.JS ---
             if (activeEvents.length === 1) {
                 const ev = activeEvents[0];
                 floatingIcons = `<div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); font-size:1.4em; z-index:3; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));">${ev.icon}</div>`;
@@ -439,11 +516,7 @@ async function muatDetailJadwal(scheduleId, judul, waktu, lokasi, tipeJadwal, fo
 // ============================================================================
 let currentAdminScheduleId = null;
 window.allMembersAdminCache = [];
-window.stagedAdminMembers = []; // Menyimpan antrean member yang akan ditambahkan
-
-function isLocalhost() {
-    return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
-}
+window.stagedAdminMembers = []; 
 
 function siapkanAdminPanel(scheduleId) {
     currentAdminScheduleId = scheduleId;
@@ -459,7 +532,6 @@ window.toggleAdminLineup = async function() {
     if (adminArea.style.display === 'none') { 
         adminArea.style.display = 'block'; 
         
-        // Membersihkan layout HTML jadul dari index.html & Menerapkan layout dinamis baru
         adminArea.innerHTML = `
             <h3 style="color: #d81b60; text-align: center; margin-top: 0;">Manajemen Lineup Manual</h3>
             <div id="admin-status-jadwal" style="background:#e2e8f0; padding:15px; border-radius:5px; margin-bottom:15px;"></div>
@@ -537,7 +609,7 @@ async function muatDataAdminLineup() {
     wrapper.innerHTML = '<p style="text-align:center;">Memuat data member & lineup...</p>';
 
     if (window.allMembersAdminCache.length === 0) {
-        const { data: allMem } = await supabaseClient.from('members').select('id, nama').order('nama');
+        const { data: allMem } = await supabaseClient.from('members').select('id, nama, nama_panggilan').order('nama');
         if (allMem) window.allMembersAdminCache = allMem;
     }
 
@@ -554,7 +626,7 @@ async function muatDataAdminLineup() {
         <div style="margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
             <h4 style="margin-top:0; color:#333; margin-bottom:10px;">Tambah Member ke Lineup (Bisa Banyak Sekaligus)</h4>
             <div style="display:flex; gap:10px;">
-                <input list="dl-admin-members" id="input-admin-member" placeholder="Ketik nama member..." style="flex:1; padding:8px; border:1px solid #ccc; border-radius:4px;" onkeydown="if(event.key === 'Enter') adminStageMember()">
+                <input list="dl-admin-members" id="input-admin-member" placeholder="Ketik/Paste nama (pisahkan dengan koma)..." style="flex:1; padding:8px; border:1px solid #ccc; border-radius:4px;" onkeydown="if(event.key === 'Enter') adminStageMember()">
                 <datalist id="dl-admin-members">${dlOptions}</datalist>
                 <button onclick="adminStageMember()" style="background:#004080; color:white; border:none; padding:8px 15px; border-radius:4px; font-weight:bold; cursor:pointer;">+ Masukkan ke Antrean</button>
             </div>
@@ -612,35 +684,45 @@ async function muatDataAdminLineup() {
     renderStagedMembers();
 }
 
-// --- LOGIKA QUEUE / ANTREAN NAMA BARU ---
 window.adminStageMember = function() {
     const input = document.getElementById('input-admin-member');
-    const namaRaw = input.value.trim().toLowerCase();
-    if (!namaRaw) return;
+    const rawValues = input.value.split(',').map(s => s.trim()).filter(s => s !== '');
+    if (rawValues.length === 0) return;
 
-    const memberObj = window.allMembersAdminCache.find(m => m.nama.toLowerCase() === namaRaw);
-    if (!memberObj) {
-        alert('Nama member tidak ditemukan! Pilih atau eja dengan benar dari daftar yang tersedia.');
+    const firstValueLower = rawValues[0].toLowerCase();
+    let searchType = null;
+    
+    if (window.allMembersAdminCache.some(m => (m.nama || '').toLowerCase() === firstValueLower)) {
+        searchType = 'nama';
+    } else if (window.allMembersAdminCache.some(m => (m.nama_panggilan || '').toLowerCase() === firstValueLower)) {
+        searchType = 'nama_panggilan';
+    }
+
+    if (!searchType) {
+        alert(`Nama "${rawValues[0]}" tidak ditemukan di database. Pastikan ejaan nama pertama benar!`);
         return;
     }
 
-    // Cek duplikasi di antrean
-    if (window.stagedAdminMembers.some(m => m.id === memberObj.id)) {
-        input.value = ''; return;
-    }
-
-    // Cek jika member sudah ada di tabel (mencegah error double entry ke Supabase)
+    let addedCount = 0; let notFoundList = []; let duplicateList = [];
     const existingTableRows = document.querySelectorAll('#admin-table-body tr[data-member-id]');
-    for (let tr of existingTableRows) {
-        if (tr.getAttribute('data-member-id') === memberObj.id) {
-            alert(`${memberObj.nama} sudah ada di dalam lineup saat ini!`);
-            input.value = ''; return;
-        }
-    }
+    const existingMemberIdsInTable = Array.from(existingTableRows).map(tr => tr.getAttribute('data-member-id'));
 
-    window.stagedAdminMembers.push(memberObj);
-    input.value = '';
-    renderStagedMembers();
+    rawValues.forEach(nameStr => {
+        const nameLower = nameStr.toLowerCase();
+        const memberObj = window.allMembersAdminCache.find(m => (m[searchType] || '').toLowerCase() === nameLower);
+
+        if (!memberObj) { notFoundList.push(nameStr); return; }
+        if (window.stagedAdminMembers.some(m => m.id === memberObj.id)) return; 
+        if (existingMemberIdsInTable.includes(memberObj.id)) { duplicateList.push(memberObj.nama); return; }
+
+        window.stagedAdminMembers.push(memberObj);
+        addedCount++;
+    });
+
+    if (notFoundList.length > 0) alert(`Tidak ditemukan sebagai ${searchType}:\n${notFoundList.join(', ')}`);
+    if (duplicateList.length > 0) alert(`Sudah ada di lineup:\n${duplicateList.join(', ')}`);
+
+    input.value = ''; renderStagedMembers();
 };
 
 window.adminRemoveStagedMember = function(id) {
@@ -671,60 +753,32 @@ function renderStagedMembers() {
 
 window.adminSimpanStagedMembers = async function() {
     if (window.stagedAdminMembers.length === 0) return;
-    
     const inserts = window.stagedAdminMembers.map(m => ({
-        schedule_id: currentAdminScheduleId,
-        member_id: m.id,
-        blocking: 99
+        schedule_id: currentAdminScheduleId, member_id: m.id, blocking: null
     }));
-
     const { error } = await supabaseClient.from('performing_members').insert(inserts);
-    
-    if (error) {
-        alert('Gagal menyimpan member baru: ' + error.message);
-    } else {
-        alert(`${inserts.length} Member berhasil dimasukkan ke formasi!`);
-        await muatDataAdminLineup();
-        refreshDetailSaatIni();
-    }
+    if (error) alert('Gagal menyimpan member baru: ' + error.message);
+    else { alert(`${inserts.length} Member berhasil dimasukkan!`); await muatDataAdminLineup(); refreshDetailSaatIni(); }
 };
 
-// --- LOGIKA SIMPAN CENTANG MASSAL ---
 window.adminSimpanPerubahanLineup = async function() {
     const rows = document.querySelectorAll('#admin-table-body tr[data-id]');
     const updates = [];
-    
     rows.forEach(tr => {
-        const id = tr.getAttribute('data-id');
-        const memberId = tr.getAttribute('data-member-id');
+        const id = tr.getAttribute('data-id'); const memberId = tr.getAttribute('data-member-id');
         if(!id || !memberId) return;
-
-        const isCenter = tr.querySelector('.cb-center').checked;
-        const isShonichi = tr.querySelector('.cb-shonichi').checked;
-        const isBirthday = tr.querySelector('.cb-sts').checked;
-        const isGraduation = tr.querySelector('.cb-grad').checked;
-
         updates.push({
-            id: id,
-            schedule_id: currentAdminScheduleId,
-            member_id: memberId,
-            is_center: isCenter,
-            is_shonichi: isShonichi,
-            is_birthday: isBirthday,
-            is_graduation: isGraduation
+            id: id, schedule_id: currentAdminScheduleId, member_id: memberId,
+            is_center: tr.querySelector('.cb-center').checked,
+            is_shonichi: tr.querySelector('.cb-shonichi').checked,
+            is_birthday: tr.querySelector('.cb-sts').checked,
+            is_graduation: tr.querySelector('.cb-grad').checked
         });
     });
-
     if (updates.length === 0) return alert('Tidak ada data yang bisa disimpan.');
-
     const { error } = await supabaseClient.from('performing_members').upsert(updates);
-    
-    if (error) {
-        alert('Gagal menyimpan perubahan massal: ' + error.message);
-    } else {
-        alert('Perubahan centang berhasil disimpan!');
-        refreshDetailSaatIni();
-    }
+    if (error) alert('Gagal menyimpan massal: ' + error.message);
+    else { alert('Perubahan centang berhasil disimpan!'); refreshDetailSaatIni(); }
 };
 
 window.adminHapusMember = async function(memberId) {
@@ -739,3 +793,131 @@ function refreshDetailSaatIni() {
         muatDetailJadwal(currentScheduleData.scheduleId, currentScheduleData.judul, currentScheduleData.waktu, currentScheduleData.lokasi, currentScheduleData.tipeJadwal, currentScheduleData.fotoEvent, currentScheduleData.tipeSekunder);
     }
 }
+
+// ============================================================================
+// --- FUNGSI ADMIN: CRUD JADWAL BARU DARI MENU UTAMA ---
+// ============================================================================
+window.toggleAdminSchedule = function() {
+    const area = document.getElementById('admin-schedule-area');
+    if (area.style.display === 'none') {
+        area.style.display = 'block';
+    } else {
+        window.adminBatalEditSchedule();
+        area.style.display = 'none';
+    }
+};
+
+window.adminBatalEditSchedule = function() {
+    document.getElementById('adm-sch-id').value = '';
+    document.getElementById('adm-sch-judul').value = '';
+    document.getElementById('adm-sch-waktu').value = '';
+    document.getElementById('adm-sch-team').value = 'JKT48';
+    document.getElementById('adm-sch-lokasi').value = '';
+    document.getElementById('adm-sch-tipe').value = 'Theater';
+    document.getElementById('adm-sch-sekunder').value = '';
+    document.getElementById('adm-sch-foto').value = '';
+    document.getElementById('adm-sch-shonichi').checked = false;
+    document.getElementById('adm-sch-senshuraku').checked = false;
+
+    const area = document.getElementById('admin-schedule-area');
+    const btnSave = document.querySelector('#adm-sch-btns button');
+    if (btnSave) {
+        btnSave.innerText = 'Simpan Jadwal';
+        btnSave.style.background = '#d81b60';
+    }
+    document.getElementById('btn-cancel-sch').style.display = 'none';
+    area.style.display = 'none';
+};
+
+window.adminEditSchedule = function(id) {
+    const jadwal = dataJadwalBulanIni.find(j => j.id === id);
+    if (!jadwal) return;
+
+    document.getElementById('adm-sch-id').value = id;
+    document.getElementById('adm-sch-judul').value = jadwal.judul_show || '';
+    
+    // Konversi zona waktu database (ISO UTC) menjadi waktu lokal browser untuk input form
+    if (jadwal.tanggal_waktu) {
+        const d = new Date(jadwal.tanggal_waktu);
+        const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+        const localISOTime = (new Date(d - tzoffset)).toISOString().slice(0, 16);
+        document.getElementById('adm-sch-waktu').value = localISOTime;
+    } else {
+        document.getElementById('adm-sch-waktu').value = '';
+    }
+
+    document.getElementById('adm-sch-team').value = jadwal.team || 'JKT48';
+    document.getElementById('adm-sch-lokasi').value = jadwal.lokasi || '';
+    document.getElementById('adm-sch-tipe').value = jadwal.tipe_jadwal || 'Theater';
+    document.getElementById('adm-sch-sekunder').value = jadwal.tipe_jadwal_sekunder || '';
+    document.getElementById('adm-sch-foto').value = jadwal.foto_event || '';
+    document.getElementById('adm-sch-shonichi').checked = jadwal.is_shonichi || false;
+    document.getElementById('adm-sch-senshuraku').checked = jadwal.is_senshuraku || false;
+
+    const area = document.getElementById('admin-schedule-area');
+    area.style.display = 'block';
+
+    const btnSave = document.querySelector('#adm-sch-btns button');
+    if (btnSave) {
+        btnSave.innerText = 'Simpan Perubahan';
+        btnSave.style.background = '#ff9800';
+    }
+    document.getElementById('btn-cancel-sch').style.display = 'inline-block';
+    
+    window.scrollTo(0, area.offsetTop - 50);
+};
+
+window.adminSimpanScheduleBaru = async function() {
+    const id = document.getElementById('adm-sch-id').value;
+    const judul = document.getElementById('adm-sch-judul').value;
+    const waktuRaw = document.getElementById('adm-sch-waktu').value;
+    
+    if (!judul || !waktuRaw) {
+        alert('Judul dan Waktu Jadwal wajib diisi!');
+        return;
+    }
+
+    const waktuISO = new Date(waktuRaw).toISOString();
+
+    const payload = {
+        judul_show: judul,
+        tanggal_waktu: waktuISO,
+        team: document.getElementById('adm-sch-team').value,
+        lokasi: document.getElementById('adm-sch-lokasi').value || null,
+        tipe_jadwal: document.getElementById('adm-sch-tipe').value,
+        tipe_jadwal_sekunder: document.getElementById('adm-sch-sekunder').value || null,
+        foto_event: document.getElementById('adm-sch-foto').value || null,
+        is_shonichi: document.getElementById('adm-sch-shonichi').checked,
+        is_senshuraku: document.getElementById('adm-sch-senshuraku').checked
+    };
+
+    if (id) {
+        const { error } = await supabaseClient.from('theater_schedules').update(payload).eq('id', id);
+        if (error) alert('Gagal update: ' + error.message);
+        else {
+            alert('Jadwal berhasil diperbarui!');
+            window.adminBatalEditSchedule();
+            terapkanFilterJadwal();
+        }
+    } else {
+        const { error } = await supabaseClient.from('theater_schedules').insert([payload]);
+        if (error) alert('Gagal menambah jadwal: ' + error.message);
+        else {
+            alert('Jadwal baru berhasil ditambahkan!');
+            window.adminBatalEditSchedule();
+            terapkanFilterJadwal();
+        }
+    }
+};
+
+window.adminHapusSchedule = async function(id) {
+    if(!confirm('Yakin ingin menghapus jadwal ini?\\nPerhatian: Semua data Lineup member & Tracklist lagu di dalamnya juga akan terhapus dari database!')) return;
+    
+    const { error } = await supabaseClient.from('theater_schedules').delete().eq('id', id);
+    if (error) {
+        alert('Gagal menghapus: ' + error.message);
+    } else {
+        alert('Jadwal berhasil dihapus!');
+        terapkanFilterJadwal();
+    }
+};

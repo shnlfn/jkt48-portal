@@ -2,37 +2,22 @@
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // --- FUNGSI CEK LOKAL ---
-// Cukup cek localhost, otomatis panel admin menyala di setiap halaman
 function isLocalhost() {
     return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
 }
 
-// --- KEAMANAN DASAR ---
-if (!isLocalhost()) {
-    document.addEventListener('contextmenu', event => event.preventDefault());
-    document.onkeydown = function(e) {
-        if (e.keyCode == 123) return false; // F12
-        if (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0))) return false;
-        if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false; // Ctrl+U
-    }
-}
-
 // --- SISTEM NAVIGASI ---
 function bukaHalaman(idHalaman) {
-    // Sembunyikan semua halaman
     document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-    // Tampilkan halaman yang dituju
     const targetHalaman = document.getElementById(idHalaman);
     if(targetHalaman) targetHalaman.classList.add('active');
 
-    // Reset tombol menu secara aman (mencegah crash jika ID tidak ditemukan)
-    const tombolMenu = ['btn-schedule', 'btn-member', 'btn-song', 'btn-team', 'btn-stage'];
+    const tombolMenu = ['btn-schedule', 'btn-member', 'btn-song', 'btn-team', 'btn-stage', 'btn-generation', 'btn-recap'];
     tombolMenu.forEach(idBtn => {
         const btn = document.getElementById(idBtn);
         if (btn) btn.classList.remove('active');
     });
     
-    // Set tombol aktif sesuai halaman
     if(idHalaman.includes('schedule')) {
         const btn = document.getElementById('btn-schedule'); if(btn) btn.classList.add('active');
     }
@@ -48,10 +33,15 @@ function bukaHalaman(idHalaman) {
     else if(idHalaman.includes('stage')) {
         const btn = document.getElementById('btn-stage'); if(btn) btn.classList.add('active');
     }
+    else if(idHalaman.includes('generation')) {
+        const btn = document.getElementById('btn-generation'); if(btn) btn.classList.add('active');
+    }
+    else if(idHalaman.includes('recap')) {
+        const btn = document.getElementById('btn-recap'); if(btn) btn.classList.add('active');
+    }
     
     window.scrollTo(0, 0); 
     
-    // Panggil fungsi muat data berdasarkan menu
     if(idHalaman === 'view-teams') { if(typeof muatDaftarTeam === 'function') muatDaftarTeam(); }
     if(idHalaman === 'view-stages') { if(typeof muatDaftarStage === 'function') muatDaftarStage(); }
     if(idHalaman === 'view-albums') { if(typeof muatDaftarAlbum === 'function') muatDaftarAlbum(); }
