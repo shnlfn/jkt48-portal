@@ -347,8 +347,7 @@ async function muatDetailJadwal(scheduleId, judul, waktu, lokasi, tipeJadwal, fo
     const { data, error } = await supabaseClient.from('performing_members')
         .select(`is_birthday, is_center, is_shonichi, is_graduation, blocking, members ( id, nama, nama_panggilan, status, team, generasi )`)
         .eq('schedule_id', scheduleId)
-        .order('blocking', { ascending: true, nullsFirst: false }) 
-        .order('is_center', { ascending: false });
+        .order('blocking', { ascending: true, nullsFirst: false });
 
     loading.style.display = 'none';
 
@@ -360,40 +359,30 @@ async function muatDetailJadwal(scheduleId, judul, waktu, lokasi, tipeJadwal, fo
         let validMembersData = data.filter(item => item && item.members);
 
         // ========================================================================
-        // LOGIKA SORTING GLOBAL (BERLAKU UNTUK TEATER MAUPUN EVENT)
+        // LOGIKA SORTING BARU: REGULER -> TRAINEE, LALU ABJAD NAMA PANGGUNG A-Z
         // ========================================================================
         validMembersData.sort((a, b) => {
-            // 1. Urutkan berdasarkan Blocking (Ascending)
+            // 1. Prioritaskan Setting Blocking Manual dari Admin (jika ada)
             const blockA = (a.blocking !== null && a.blocking !== '') ? Number(a.blocking) : 9999;
             const blockB = (b.blocking !== null && b.blocking !== '') ? Number(b.blocking) : 9999;
             if (blockA !== blockB) return blockA - blockB;
 
-            // 2. Prioritaskan Center jika blocking sama (atau sama-sama kosong)
-            const centerA = a.is_center ? 1 : 0;
-            const centerB = b.is_center ? 1 : 0;
-            if (centerA !== centerB) return centerB - centerA;
-
-            // 3. Khusus Event, pisahkan Trainee di antrean belakang
-            if (tipeJadwal !== 'Theater') {
-                const statusA = (a.members.status || 'Anggota').toLowerCase();
-                const statusB = (b.members.status || 'Anggota').toLowerCase();
-                const isTraineeA = statusA.includes('trainee') ? 1 : 0;
-                const isTraineeB = statusB.includes('trainee') ? 1 : 0;
-                if (isTraineeA !== isTraineeB) return isTraineeA - isTraineeB;
-                
-                if (isTraineeA === 1 && isTraineeB === 1) {
-                    const genA = Number(a.members.generasi) || 999;
-                    const genB = Number(b.members.generasi) || 999;
-                    if (genA !== genB) return genA - genB; 
-                }
-            }
-
-            // 4. FIX: Urutkan berdasarkan Nama Lengkap Anggota (Ascending A-Z)
-            // Ini akan memastikan Abigail Rachel selalu di atas Angelina Christy
-            const namaA = a.members.nama ? a.members.nama.toLowerCase() : '';
-            const namaB = b.members.nama ? b.members.nama.toLowerCase() : '';
+            // 2. Pisahkan Reguler/Team dan Trainee (Untuk semua jenis jadwal)
+            const statusA = (a.members.status || '').toLowerCase();
+            const statusB = (b.members.status || '').toLowerCase();
+            const teamA = (a.members.team || '').toLowerCase();
+            const teamB = (b.members.team || '').toLowerCase();
             
-            return namaA.localeCompare(namaB);
+            const isTraineeA = (statusA.includes('trainee') || teamA.includes('trainee') || teamA.includes('academy')) ? 1 : 0;
+            const isTraineeB = (statusB.includes('trainee') || teamB.includes('trainee') || teamB.includes('academy')) ? 1 : 0;
+            
+            if (isTraineeA !== isTraineeB) return isTraineeA - isTraineeB;
+
+            // 3. Urutkan berdasarkan Nama Panggung (Nama Panggilan) secara alfabet (A-Z)
+            const namaPanggungA = (a.members.nama_panggilan || a.members.nama.split(' ')[0] || '').toLowerCase();
+            const namaPanggungB = (b.members.nama_panggilan || b.members.nama.split(' ')[0] || '').toLowerCase();
+            
+            return namaPanggungA.localeCompare(namaPanggungB);
         });
 
         if (validMembersData.length === 12) container.style.maxWidth = '750px';
